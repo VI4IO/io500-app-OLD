@@ -171,6 +171,8 @@ void DecodeDirective(char *line, IOR_param_t *params)
                 strcpy(params->hintsFileName, value);
         } else if (strcasecmp(option, "deadlineforstonewalling") == 0) {
                 params->deadlineForStonewalling = atoi(value);
+        } else if (strcasecmp(option, "stoneWallingWearOut") == 0) {
+                params->stoneWallingWearOut = atoi(value);
         } else if (strcasecmp(option, "maxtimeduration") == 0) {
                 params->maxTimeDuration = atoi(value);
         } else if (strcasecmp(option, "outlierthreshold") == 0) {
@@ -446,7 +448,7 @@ IOR_test_t *ReadConfigScript(char *scriptName)
 IOR_test_t *ParseCommandLine(int argc, char **argv)
 {
         static const char *opts =
-          "a:A:b:BcCd:D:eEf:FgG:hHi:Ij:J:kKl:mM:nN:o:O:pPqQ:rRs:St:T:uU:vVwWxX:YzZ";
+          "a:A:b:BcCd:D:eEf:FgG:hHi:Ij:J:kKl:mM:nN:o:O:pPqQ:rRs:St:T:uU:vVwWxX:YzZy";
         int c, i;
         static IOR_test_t *tests = NULL;
 
@@ -539,13 +541,13 @@ IOR_test_t *ParseCommandLine(int argc, char **argv)
                                 initialTestParams.dataPacketType = incompressible;
                                 break;
                         case 't': /* timestamp */
-                                initialTestParams.dataPacketType = timestamp;         
+                                initialTestParams.dataPacketType = timestamp;
                                 break;
                         case 'o': /* offset packet */
                                 initialTestParams.storeFileOffset = TRUE;
                                 initialTestParams.dataPacketType = offset;
                                 break;
-                        default: 
+                        default:
                                 fprintf(stdout,
                                         "Unknown arguement for -l  %s generic assumed\n", optarg);
                                 break;
@@ -625,6 +627,9 @@ IOR_test_t *ParseCommandLine(int argc, char **argv)
                         break;
                 case 'X':
                         initialTestParams.reorderTasksRandomSeed = atoi(optarg);
+                        break;
+                case 'y':
+                        initialTestParams.stoneWallingWearOut = TRUE;
                         break;
                 case 'Y':
                         initialTestParams.fsyncPerWrite = TRUE;
