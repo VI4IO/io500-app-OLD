@@ -69,8 +69,68 @@ static void ValidateTests(IOR_param_t *);
 static IOR_offset_t WriteOrRead(IOR_param_t * test, IOR_results_t * results, void *fd, int access, IOR_io_buffers* ioBuffers);
 static void WriteTimes(IOR_param_t *, double **, int, int);
 
-/********************************** M A I N ***********************************/
+IOR_test_t * ior_run(int argc, char **argv){
+        IOR_test_t *tests_head;
+        IOR_test_t *tptr;
+        MPI_CHECK(MPI_Comm_size(MPI_COMM_WORLD, &numTasksWorld), "cannot get number of tasks");
+        MPI_CHECK(MPI_Comm_rank(MPI_COMM_WORLD, &rank), "cannot get rank");
+        PrintEarlyHeader();
 
+        /* Sanity check, we were compiled with SOME backend, right? */
+        if (available_aiori[0] == NULL) {
+                ERR("No IO backends compiled into ior.  "
+                    "Run 'configure --with-<backend>', and recompile.");
+        }
+
+        /* setup tests, and validate parameters */
+        tests_head = SetupTests(argc, argv);
+        verbose = tests_head->params.verbose;
+        tests_head->params.testComm = MPI_COMM_WORLD;
+
+        /* check for commandline 'help' request */
+        if (rank == 0 && tests_head->params.showHelp == TRUE) {
+                DisplayUsage(argv);
+        }
+
+        PrintHeader(argc, argv);
+
+        /* perform each test */
+        for (tptr = tests_head; tptr != NULL; tptr = tptr->next) {
+                verbose = tptr->params.verbose;
+                if (rank == 0 && verbose >= VERBOSE_0) {
+                        ShowTestInfo(&tptr->params);
+                }
+                if (rank == 0 && verbose >= VERBOSE_3) {
+                        ShowTest(&tptr->params);
+                }
+
+                // This is useful for trapping a running MPI process.  While
+                // this is sleeping, run the script 'testing/hdfs/gdb.attach'
+                if (verbose >= VERBOSE_4) {
+                        printf("\trank %d: sleeping\n", rank);
+                        sleep(5);
+                        printf("\trank %d: awake.\n", rank);
+                }
+                TestIoSys(tptr);
+
+                if(rank == 0 && tptr->params.stoneWallingWearOut){
+                  fprintf(stdout, "Pairs deadlineForStonewallingaccessed: %lld\n", (long long) tptr->results->pairs_accessed);
+                }
+        }
+
+        PrintLongSummaryAllTests(tests_head);
+
+        /* display finish time */
+        if (rank == 0 && verbose >= VERBOSE_0) {
+                fprintf(stdout, "\n");
+                fprintf(stdout, "Finished: %s", CurrentTimeString());
+        }
+        return tests_head;
+}
+
+
+/********************************** M A I N ***********************************/
+ 
 int main(int argc, char **argv)
 {
         int i;
