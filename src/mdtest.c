@@ -144,7 +144,7 @@ static int sync_file;
 static int path_count;
 static int nstride; /* neighbor stride */
 //MPI_Comm testComm;
-table_t * summary_table;
+static table_t * summary_table;
 static pid_t pid;
 static uid_t uid;
 
@@ -1790,7 +1790,7 @@ void create_remove_directory_tree(int create,
     }
 }
 
-void mdtest_run(int argc, char **argv) {
+table_t * mdtest_run(int argc, char **argv) {
     int i, j, k, c;
     int nodeCount;
     MPI_Group worldgroup, testgroup;
@@ -2395,6 +2395,7 @@ void mdtest_run(int argc, char **argv) {
     if (random_seed > 0) {
         free(rand_array);
     }
+    return summary_table;
 }
 
 int main(int argc, char **argv) {
