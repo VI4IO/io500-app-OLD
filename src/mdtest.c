@@ -64,6 +64,7 @@
 
 #include "aiori.h"
 #include "ior.h"
+#include "mdtest.h"
 
 #include <mpi.h>
 
@@ -80,12 +81,7 @@
 #define TEST_DIR "#test-dir"
 #define ITEM_COUNT 25000
 
-typedef struct
-{
-    double entry[10];
-} table_t;
-
-int rank;
+//int rank;
 static int size;
 static uint64_t *rand_array;
 static char testdir[MAX_LEN];
@@ -117,7 +113,7 @@ static int branch_factor = 1;
 static int depth;
 
 /* needed for MPI/IO backend to link correctly */
-int rankOffset = 0;
+// int rankOffset = 0;
 
 /*
  * This is likely a small value, but it's sometimes computed by
@@ -138,7 +134,7 @@ static int dirs_only;
 static int pre_delay;
 static int unique_dir_per_task;
 static int time_unique_dir_overhead;
-int verbose;
+//int verbose;
 static int throttle = 1;
 static uint64_t items;
 static int collective_creates;
@@ -147,8 +143,8 @@ static size_t read_bytes;
 static int sync_file;
 static int path_count;
 static int nstride; /* neighbor stride */
-MPI_Comm testComm;
-static table_t * summary_table;
+//MPI_Comm testComm;
+table_t * summary_table;
 static pid_t pid;
 static uid_t uid;
 
@@ -1794,7 +1790,7 @@ void create_remove_directory_tree(int create,
     }
 }
 
-int main(int argc, char **argv) {
+void mdtest_run(int argc, char **argv) {
     int i, j, k, c;
     int nodeCount;
     MPI_Group worldgroup, testgroup;
@@ -1816,7 +1812,6 @@ int main(int argc, char **argv) {
         }
     }
 
-    MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
@@ -2400,7 +2395,13 @@ int main(int argc, char **argv) {
     if (random_seed > 0) {
         free(rand_array);
     }
+}
+
+int main(int argc, char **argv) {
+    MPI_Init(&argc, &argv);
+
+    mdtest_run(argc, argv);
 
     MPI_Finalize();
-    exit(0);
+    return 0;
 }
