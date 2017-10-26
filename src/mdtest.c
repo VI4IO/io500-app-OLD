@@ -2131,22 +2131,21 @@ table_t * mdtest_run(int argc, char **argv) {
     }
 
     if (rank == 0) {
-        fprintf(stdout, "Command line used:");
-        for (i = 0; i < argc; i++) {
+        fprintf(stdout, "Command line used: %s", argv[0]);
+        for (i = 1; i < argc; i++) {
             fprintf(stdout, " \"%s\"", argv[i]);
         }
         fprintf(stdout, "\n");
         fflush(stdout);
     }
 
-    stone_wall_timer_seconds = 0;
     /* Parse command line options */
+    optind = 1; // reset getopt argument
     while (1) {
         c = getopt(argc, argv, "a:b:BcCd:De:Ef:Fhi:I:l:Ln:N:p:rR::s:StTuvV:w:W:yz:");
         if (c == -1) {
             break;
         }
-
         switch (c) {
         case 'a':
             backend_name = optarg; break;
@@ -2267,6 +2266,7 @@ table_t * mdtest_run(int argc, char **argv) {
         fprintf( stdout, "stride                  : %d\n", stride );
         fprintf( stdout, "shared_file             : %s\n", ( shared_file ? "True" : "False" ));
         fprintf( stdout, "time_unique_dir_overhead: %s\n", ( time_unique_dir_overhead ? "True" : "False" ));
+        fprintf( stdout, "stone_wall_timer_seconds: %d\n", stone_wall_timer_seconds);
         fprintf( stdout, "stat_only               : %s\n", ( stat_only ? "True" : "False" ));
         fprintf( stdout, "unique_dir_per_task     : %s\n", ( unique_dir_per_task ? "True" : "False" ));
         fprintf( stdout, "write_bytes             : "LLU"\n", write_bytes );

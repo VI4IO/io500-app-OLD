@@ -313,7 +313,7 @@ void DecodeDirective(char *line, IOR_param_t *params)
                         ERR("beegfsNumTargets must be >= 1");
         } else if (strcasecmp(option, "beegfsChunkSize") == 0) {
  #ifndef HAVE_BEEGFS_BEEGFS_H
-                 ERR("ior was not compiled with BeeGFS support"); 
+                 ERR("ior was not compiled with BeeGFS support");
  #endif
                  params->beegfs_chunkSize = StringToBytes(value);
                  if (!ISPOWEROFTWO(params->beegfs_chunkSize) || params->beegfs_chunkSize < (1<<16))
@@ -462,6 +462,7 @@ IOR_test_t *ParseCommandLine(int argc, char **argv)
         initialTestParams.writeFile = initialTestParams.readFile = FALSE;
         initialTestParams.checkWrite = initialTestParams.checkRead = FALSE;
 
+        optind = 1; // reset getopt argument
         while ((c = getopt(argc, argv, opts)) != -1) {
                 switch (c) {
                 case 'a':
