@@ -29,4 +29,9 @@ void SeedRandGen(MPI_Comm);
 void SetHints (MPI_Info *, char *);
 void ShowHints (MPI_Info *);
 
+void init_clock(void);
+double GetTimeStamp(void);
+
+extern double wall_clock_deviation;
+extern double wall_clock_delta;
 #endif  /* !_UTILITIES_H */

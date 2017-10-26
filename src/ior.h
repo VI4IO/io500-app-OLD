@@ -240,8 +240,6 @@ void AllocResults(IOR_test_t *test);
 void GetPlatformName(char *);
 void init_IOR_Param_t(IOR_param_t *p);
 
-double GetTimeStamp(void);
-
 /*
  * This function runs IOR given by command line, useful for testing
  */

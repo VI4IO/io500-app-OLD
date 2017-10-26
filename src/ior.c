@@ -47,8 +47,6 @@ MPI_Comm testComm;
 /* file scope globals */
 extern char **environ;
 int totalErrorCount = 0;
-double wall_clock_delta = 0;
-double wall_clock_deviation;
 
 const ior_aiori_t *backend;
 
@@ -1029,31 +1027,6 @@ static void GetTestFileName(char *testFileName, IOR_param_t * test)
 }
 
 /*
- * Get time stamp.  Use MPI_Timer() unless _NO_MPI_TIMER is defined,
- * in which case use gettimeofday().
- */
-double GetTimeStamp(void)
-{
-        double timeVal;
-#ifdef _NO_MPI_TIMER
-        struct timeval timer;
-
-        if (gettimeofday(&timer, (struct timezone *)NULL) != 0)
-                ERR("cannot use gettimeofday()");
-        timeVal = (double)timer.tv_sec + ((double)timer.tv_usec / 1000000);
-#else                           /* not _NO_MPI_TIMER */
-        timeVal = MPI_Wtime();  /* no MPI_CHECK(), just check return value */
-        if (timeVal < 0)
-                ERR("cannot use MPI_Wtime()");
-#endif                          /* _NO_MPI_TIMER */
-
-        /* wall_clock_delta is difference from root node's time */
-        timeVal -= wall_clock_delta;
-
-        return (timeVal);
-}
-
-/*
  * Convert IOR_offset_t value to human readable string.  This routine uses a
  * statically-allocated buffer internally and so is not re-entrant.
  */
@@ -1335,34 +1308,6 @@ static void RemoveFile(char *testFileName, int filePerProc, IOR_param_t * test)
 }
 
 /*
- * Determine any spread (range) between node times.
- */
-static double TimeDeviation(void)
-{
-        double timestamp;
-        double min = 0;
-        double max = 0;
-        double roottimestamp;
-
-        MPI_CHECK(MPI_Barrier(MPI_COMM_WORLD), "barrier error");
-        timestamp = GetTimeStamp();
-        MPI_CHECK(MPI_Reduce(&timestamp, &min, 1, MPI_DOUBLE,
-                             MPI_MIN, 0, MPI_COMM_WORLD),
-                  "cannot reduce tasks' times");
-        MPI_CHECK(MPI_Reduce(&timestamp, &max, 1, MPI_DOUBLE,
-                             MPI_MAX, 0, MPI_COMM_WORLD),
-                  "cannot reduce tasks' times");
-
-        /* delta between individual nodes' time and root node's time */
-        roottimestamp = timestamp;
-        MPI_CHECK(MPI_Bcast(&roottimestamp, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD),
-                  "cannot broadcast root's time");
-        wall_clock_delta = timestamp - roottimestamp;
-
-        return max - min;
-}
-
-/*
  * Setup tests by parsing commandline and creating test script.
  * Perform a sanity-check on the configured parameters.
  */
@@ -1387,8 +1332,7 @@ static IOR_test_t *SetupTests(int argc, char **argv)
                 tests = tests->next;
         }
 
-        /* check for skew between tasks' start times */
-        wall_clock_deviation = TimeDeviation();
+        init_clock();
 
         /* seed random number generator */
         SeedRandGen(MPI_COMM_WORLD);

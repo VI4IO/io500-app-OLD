@@ -470,3 +470,65 @@ int uname(struct utsname *name)
         return 0;
 }
 #endif /* _WIN32 */
+
+
+double wall_clock_deviation;
+double wall_clock_delta = 0;
+
+/*
+ * Get time stamp.  Use MPI_Timer() unless _NO_MPI_TIMER is defined,
+ * in which case use gettimeofday().
+ */
+double GetTimeStamp(void)
+{
+        double timeVal;
+#ifdef _NO_MPI_TIMER
+        struct timeval timer;
+
+        if (gettimeofday(&timer, (struct timezone *)NULL) != 0)
+                ERR("cannot use gettimeofday()");
+        timeVal = (double)timer.tv_sec + ((double)timer.tv_usec / 1000000);
+#else                           /* not _NO_MPI_TIMER */
+        timeVal = MPI_Wtime();  /* no MPI_CHECK(), just check return value */
+        if (timeVal < 0)
+                ERR("cannot use MPI_Wtime()");
+#endif                          /* _NO_MPI_TIMER */
+
+        /* wall_clock_delta is difference from root node's time */
+        timeVal -= wall_clock_delta;
+
+        return (timeVal);
+}
+
+/*
+ * Determine any spread (range) between node times.
+ */
+static double TimeDeviation(void)
+{
+        double timestamp;
+        double min = 0;
+        double max = 0;
+        double roottimestamp;
+
+        MPI_CHECK(MPI_Barrier(MPI_COMM_WORLD), "barrier error");
+        timestamp = GetTimeStamp();
+        MPI_CHECK(MPI_Reduce(&timestamp, &min, 1, MPI_DOUBLE,
+                             MPI_MIN, 0, MPI_COMM_WORLD),
+                  "cannot reduce tasks' times");
+        MPI_CHECK(MPI_Reduce(&timestamp, &max, 1, MPI_DOUBLE,
+                             MPI_MAX, 0, MPI_COMM_WORLD),
+                  "cannot reduce tasks' times");
+
+        /* delta between individual nodes' time and root node's time */
+        roottimestamp = timestamp;
+        MPI_CHECK(MPI_Bcast(&roottimestamp, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD),
+                  "cannot broadcast root's time");
+        wall_clock_delta = timestamp - roottimestamp;
+
+        return max - min;
+}
+
+void init_clock(){
+  /* check for skew between tasks' start times */
+  wall_clock_deviation = TimeDeviation();
+}
