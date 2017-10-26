@@ -72,6 +72,7 @@ static void WriteTimes(IOR_param_t *, double **, int, int);
 IOR_test_t * ior_run(int argc, char **argv){
         IOR_test_t *tests_head;
         IOR_test_t *tptr;
+
         MPI_CHECK(MPI_Comm_size(MPI_COMM_WORLD, &numTasksWorld), "cannot get number of tasks");
         MPI_CHECK(MPI_Comm_rank(MPI_COMM_WORLD, &rank), "cannot get rank");
         PrintEarlyHeader();
@@ -1031,7 +1032,7 @@ static void GetTestFileName(char *testFileName, IOR_param_t * test)
  * Get time stamp.  Use MPI_Timer() unless _NO_MPI_TIMER is defined,
  * in which case use gettimeofday().
  */
-static double GetTimeStamp(void)
+double GetTimeStamp(void)
 {
         double timeVal;
 #ifdef _NO_MPI_TIMER
