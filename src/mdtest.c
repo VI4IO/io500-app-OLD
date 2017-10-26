@@ -105,13 +105,14 @@ static char unique_rm_dir[MAX_LEN];
 static char unique_rm_uni_dir[MAX_LEN];
 static char *write_buffer;
 static char *read_buffer;
-static int barriers = 1;
+
+static int barriers;
 static int create_only;
 static int stat_only;
 static int read_only;
 static int remove_only;
 static int leaf_only;
-static int branch_factor = 1;
+static int branch_factor;
 static int depth;
 
 /* needed for MPI/IO backend to link correctly */
@@ -137,7 +138,7 @@ static int pre_delay;
 static int unique_dir_per_task;
 static int time_unique_dir_overhead;
 //int verbose;
-static int throttle = 1;
+static int throttle;
 static uint64_t items;
 static int collective_creates;
 static size_t write_bytes;
@@ -146,6 +147,7 @@ static size_t read_bytes;
 static int sync_file;
 static int path_count;
 static int nstride; /* neighbor stride */
+
 //MPI_Comm testComm;
 static table_t * summary_table;
 static pid_t pid;
@@ -161,8 +163,8 @@ static IOR_param_t param;
 typedef struct{
   double start_time;
 
-  uint64_t iterations_done;
-  uint64_t items_done;
+  long long unsigned iterations_done;
+  long long unsigned items_done;
 } rank_progress_t;
 
 #define CHECK_STONE_WALL(p) ((stone_wall_timer_seconds != 0) && ((GetTimeStamp() - (p)->start_time) > stone_wall_timer_seconds))
@@ -629,7 +631,7 @@ void create_remove_items(int currDepth, const int dirs, const int create, const 
 }
 
 /* stats all of the items created as specified by the input parameters */
-void mdtest_stat(const int random, const int dirs, const char *path) {
+void mdtest_stat(const int random, const int dirs, const char *path, rank_progress_t * progress) {
     struct stat buf;
     uint64_t parent_dir, item_num = 0;
     char item[MAX_LEN], temp[MAX_LEN];
@@ -995,9 +997,9 @@ void directory_test(const int iteration, const int ntasks, const char *path, ran
 
         /* stat directories */
         if (random_seed > 0) {
-            mdtest_stat(1, 1, temp_path);
+            mdtest_stat(1, 1, temp_path, progress);
         } else {
-            mdtest_stat(0, 1, temp_path);
+            mdtest_stat(0, 1, temp_path, progress);
         }
     }
 
@@ -1186,9 +1188,9 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
 
         /* stat files */
         if (random_seed > 0) {
-                mdtest_stat(1,0,temp_path);
+                mdtest_stat(1,0,temp_path, progress);
         } else {
-                mdtest_stat(0,0,temp_path);
+                mdtest_stat(0,0,temp_path, progress);
         }
     }
 
@@ -1374,7 +1376,7 @@ void summarize_results(int iterations) {
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Gather(&summary_table->entry[0], tableSize*iterations,
+    MPI_Gather(& summary_table->entry[0], tableSize*iterations,
                MPI_DOUBLE, all, tableSize*iterations, MPI_DOUBLE,
                0, MPI_COMM_WORLD);
 
@@ -1627,7 +1629,6 @@ void valid_tests() {
 }
 
 void show_file_system_size(char *file_system) {
-    char          real_path[MAX_LEN];
     char          file_system_unit_str[MAX_LEN] = "GiB";
     char          inode_unit_str[MAX_LEN]       = "Mi";
     int64_t       file_system_unit_val          = 1024 * 1024 * 1024;
@@ -1672,7 +1673,6 @@ void show_file_system_size(char *file_system) {
         * 100;
 
     /* show results */
-    fprintf(stdout, "Path: %s\n", real_path);
     fprintf(stdout, "FS: %.1f %s   Used FS: %2.1f%%   ",
             total_file_system_size_hr, file_system_unit_str,
             used_file_system_percentage);
@@ -2063,7 +2063,37 @@ static void mdtest_iteration(int j, MPI_Group testgroup, table_t * summary_table
   }
 }
 
+void mdtest_init_args(){
+   barriers = 1;
+   branch_factor = 1;
+   throttle = 1;
+   create_only = 0;
+   stat_only = 0;
+   read_only = 0;
+   remove_only = 0;
+   leaf_only = 0;
+   depth = 0;
+   num_dirs_in_tree = 0;
+   items_per_dir = 0;
+   random_seed = 0;
+   shared_file = 0;
+   files_only = 0;
+   dirs_only = 0;
+   pre_delay = 0;
+   unique_dir_per_task = 0;
+   time_unique_dir_overhead = 0;
+   items = 0;
+   collective_creates = 0;
+   write_bytes = 0;
+   stone_wall_timer_seconds = 0;
+   read_bytes = 0;
+   sync_file = 0;
+   path_count = 0;
+   nstride = 0;
+}
+
 table_t * mdtest_run(int argc, char **argv) {
+    mdtest_init_args();
     int i, j, k, c;
     int nodeCount;
     MPI_Group worldgroup, testgroup;
@@ -2103,7 +2133,7 @@ table_t * mdtest_run(int argc, char **argv) {
     if (rank == 0) {
         fprintf(stdout, "Command line used:");
         for (i = 0; i < argc; i++) {
-            fprintf(stdout, " %s", argv[i]);
+            fprintf(stdout, " \"%s\"", argv[i]);
         }
         fprintf(stdout, "\n");
         fflush(stdout);
@@ -2194,6 +2224,11 @@ table_t * mdtest_run(int argc, char **argv) {
         case 'z':
             depth = atoi(optarg);                  break;
         }
+    }
+
+    if(stone_wall_timer_seconds > 0 && branch_factor > 1){
+      fprintf(stdout, "Error, stone wall timer does only work with a branch factor <= 1\n");
+      MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
     if (!create_only && !stat_only && !read_only && !remove_only) {
@@ -2326,7 +2361,7 @@ table_t * mdtest_run(int argc, char **argv) {
 
     /* setup directory path to work in */
     if (path_count == 0) { /* special case where no directory path provided with '-d' option */
-        getcwd(testdirpath, MAX_LEN);
+        char * dir = getcwd(testdirpath, MAX_LEN);
         path_count = 1;
     } else {
         strcpy(testdirpath, filenames[rank%path_count]);
@@ -2375,6 +2410,7 @@ table_t * mdtest_run(int argc, char **argv) {
 
     /* setup summary table for recording results */
     summary_table = (table_t *)malloc(iterations * sizeof(table_t));
+    memset(summary_table, 0, iterations * sizeof(table_t));
     if (summary_table == NULL) {
         FAIL("out of memory");
     }
