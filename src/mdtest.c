@@ -37,6 +37,7 @@
 #include <inttypes.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include "utilities.h"
 
 #if HAVE_SYS_PARAM_H
 #include <sys/param.h>
@@ -167,11 +168,14 @@ static IOR_param_t param;
 typedef struct{
   double start_time;
 
-  long long unsigned iterations_done;
+  int stone_wall_timer_seconds;
   long long unsigned items_done;
+
+  int items_start;
+  uint64_t items_per_dir;
 } rank_progress_t;
 
-#define CHECK_STONE_WALL(p) ((stone_wall_timer_seconds != 0) && ((GetTimeStamp() - (p)->start_time) > stone_wall_timer_seconds))
+#define CHECK_STONE_WALL(p) (((p)->stone_wall_timer_seconds != 0) && ((GetTimeStamp() - (p)->start_time) > (p)->stone_wall_timer_seconds))
 
 /* for making/removing unique directory && stating/deleting subdirectory */
 enum {MK_UNI_DIR, STAT_SUB_DIR, READ_SUB_DIR, RM_SUB_DIR, RM_UNI_DIR};
@@ -493,7 +497,7 @@ void create_remove_items_helper(const int dirs, const int create, const char *pa
         fflush( stdout );
     }
 
-    for (uint64_t i = 0 ; i < items_per_dir ; ++i) {
+    for (uint64_t i = progress->items_start ; i < progress->items_per_dir ; ++i) {
         if (!dirs) {
             if (create) {
                 create_file (path, itemNum + i);
@@ -504,7 +508,7 @@ void create_remove_items_helper(const int dirs, const int create, const char *pa
             create_remove_dirs (path, create, itemNum + i);
         }
         if(CHECK_STONE_WALL(progress)){
-          progress->items_done = i;
+          progress->items_done = i + 1;
           return;
         }
     }
@@ -547,7 +551,7 @@ void collective_helper(const int dirs, const int create, const char* path, uint6
             backend->delete (curr_item, &param);
         }
         if(CHECK_STONE_WALL(progress)){
-          progress->items_done = i;
+          progress->items_done = i + 1;
           return;
         }
     }
@@ -1142,7 +1146,7 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
     t[0] = MPI_Wtime();
 
     /* create phase */
-    if (create_only) {
+    if (create_only && ! CHECK_STONE_WALL(progress)) {
         if (unique_dir_per_task) {
             unique_dir_access(MK_UNI_DIR, temp_path);
             if (!time_unique_dir_overhead) {
@@ -1167,15 +1171,27 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
 
         /* create files */
         create_remove_items(0, 0, 1, 0, temp_path, 0, progress);
+        if(stone_wall_timer_seconds){
+          long long unsigned max_iter;
+          MPI_Allreduce(& progress->items_done, & max_iter, 1, MPI_INT, MPI_MAX, testComm);
+          // continue to the maximum...
+          printf("%d %ld\n", rank, max_iter);
+          progress->stone_wall_timer_seconds = 0;
+          progress->items_start = progress->items_done;
+          progress->items_per_dir = max_iter;
+          create_remove_items(0, 0, 1, 0, temp_path, 0, progress);
+          progress->stone_wall_timer_seconds = stone_wall_timer_seconds;
+          items = max_iter;
+        }
     }
 
     if (barriers) {
-        MPI_Barrier(testComm);
+      MPI_Barrier(testComm);
     }
     t[1] = MPI_Wtime();
 
     /* stat phase */
-    if (stat_only) {
+    if (stat_only && ! CHECK_STONE_WALL(progress)) {
         if (unique_dir_per_task) {
             unique_dir_access(STAT_SUB_DIR, temp_path);
             if (!time_unique_dir_overhead) {
@@ -1204,7 +1220,7 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
     t[2] = MPI_Wtime();
 
     /* read phase */
-    if (read_only) {
+    if (read_only && ! CHECK_STONE_WALL(progress)) {
         if (unique_dir_per_task) {
             unique_dir_access(READ_SUB_DIR, temp_path);
             if (!time_unique_dir_overhead) {
@@ -1232,7 +1248,7 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
     }
     t[3] = MPI_Wtime();
 
-    if (remove_only) {
+    if (remove_only && ! CHECK_STONE_WALL(progress)) {
         if (unique_dir_per_task) {
             unique_dir_access(RM_SUB_DIR, temp_path);
             if (!time_unique_dir_overhead) {
@@ -1260,8 +1276,7 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
         MPI_Barrier(testComm);
     }
     t[4] = MPI_Wtime();
-
-    if (remove_only) {
+    if (remove_only && ! CHECK_STONE_WALL(progress)) {
         if (unique_dir_per_task) {
             unique_dir_access(RM_UNI_DIR, temp_path);
         } else {
@@ -2221,7 +2236,7 @@ table_t * mdtest_run(int argc, char **argv) {
         case 'w':
             write_bytes = ( size_t )strtoul( optarg, ( char ** )NULL, 10 );   break;
         case 'W':
-            stone_wall_timer_seconds = ( size_t )strtoul( optarg, ( char ** )NULL, 10 );   break;
+            stone_wall_timer_seconds = atoi( optarg );   break;
         case 'y':
             sync_file = 1;                break;
         case 'z':
@@ -2437,6 +2452,8 @@ table_t * mdtest_run(int argc, char **argv) {
     rank_progress_t progress;
     memset(& progress, 0 , sizeof(progress));
     progress.start_time = GetTimeStamp();
+    progress.stone_wall_timer_seconds = stone_wall_timer_seconds;
+    progress.items_per_dir = items_per_dir;
 
     /* Run the tests */
     for (i = first; i <= last && i <= size; i += stride) {
@@ -2466,7 +2483,8 @@ table_t * mdtest_run(int argc, char **argv) {
         for (j = 0; j < iterations; j++) {
             mdtest_iteration(i, j, testgroup, & summary_table[j], & progress);
             if(CHECK_STONE_WALL(& progress)){
-              iterations = j;
+              iterations = j + 1;
+              summary_table->items = items;
               break;
             }
         }
