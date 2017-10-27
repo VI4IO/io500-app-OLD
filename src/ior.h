@@ -221,6 +221,7 @@ typedef struct
 typedef struct {
    double *writeTime;
    double *readTime;
+   int errors;
    size_t pairs_accessed; // number of I/Os done, useful for deadlineForStonewalling
    IOR_offset_t *aggFileSizeFromStat;
    IOR_offset_t *aggFileSizeFromXfer;

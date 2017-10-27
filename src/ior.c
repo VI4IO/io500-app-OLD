@@ -115,6 +115,8 @@ IOR_test_t * ior_run(int argc, char **argv){
                 if(rank == 0 && tptr->params.stoneWallingWearOut){
                   fprintf(stdout, "Pairs deadlineForStonewallingaccessed: %lld\n", (long long) tptr->results->pairs_accessed);
                 }
+                tptr->results->errors = totalErrorCount;
+                totalErrorCount = 0;
         }
 
         PrintLongSummaryAllTests(tests_head);
@@ -1402,9 +1404,9 @@ static void PrintHeader(int argc, char **argv)
                 return;
 
         fprintf(stdout, "Began: %s", CurrentTimeString());
-        fprintf(stdout, "Command line used:");
-        for (i = 0; i < argc; i++) {
-                fprintf(stdout, " %s", argv[i]);
+        fprintf(stdout, "Command line used: %s", argv[0]);
+        for (i = 1; i < argc; i++) {
+                fprintf(stdout, " \"%s\"", argv[i]);
         }
         fprintf(stdout, "\n");
         if (uname(&unamebuf) != 0) {
@@ -2272,9 +2274,6 @@ static void ValidateTests(IOR_param_t * test)
         if (test->readFile != TRUE && test->writeFile != TRUE
             && test->checkRead != TRUE && test->checkWrite != TRUE)
                 ERR("test must write, read, or check file");
-        if ((test->deadlineForStonewalling > 0)
-            && (test->checkWrite == TRUE || test->checkRead == TRUE))
-                ERR("can not perform write or read check with stonewalling");
         if (test->segmentCount < 0)
                 ERR("segment count must be positive value");
         if ((test->blockSize % sizeof(IOR_size_t)) != 0)
@@ -2651,7 +2650,7 @@ WriteTimes(IOR_param_t * test, double **timer, int iteration, int writeOrRead)
 {
         char accessType[MAX_STR];
         char timerName[MAX_STR];
-        int i, start, stop;
+        int i, start = 0, stop = 0;
 
         if (writeOrRead == WRITE) {
                 start = 0;
