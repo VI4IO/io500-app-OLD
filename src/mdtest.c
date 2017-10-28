@@ -115,7 +115,7 @@ static int stat_only;
 static int read_only;
 static int remove_only;
 static int leaf_only;
-static int branch_factor;
+static unsigned branch_factor;
 static int depth;
 
 
@@ -475,7 +475,7 @@ static void create_file (const char *path, uint64_t itemNum) {
          */
         param.offset = 0;
         param.fsyncPerWrite = sync_file;
-        if (write_bytes != backend->xfer (WRITE, aiori_fh, (IOR_size_t *) write_buffer, write_bytes, &param)) {
+        if ( write_bytes != (size_t) backend->xfer (WRITE, aiori_fh, (IOR_size_t *) write_buffer, write_bytes, &param)) {
             FAIL("unable to write file");
         }
     }
@@ -557,13 +557,14 @@ void collective_helper(const int dirs, const int create, const char* path, uint6
           return;
         }
     }
+    progress->items_done = items_per_dir;
 }
 
 /* recusive function to create and remove files/directories from the
    directory tree */
 void create_remove_items(int currDepth, const int dirs, const int create, const int collective,
                          const char *path, uint64_t dirNum, rank_progress_t * progress) {
-    int i;
+    unsigned i;
     char dir[MAX_LEN];
     char temp_path[MAX_LEN];
     unsigned long long currDir = dirNum;
@@ -849,7 +850,7 @@ void mdtest_read(int random, int dirs, char *path) {
 
         /* read file */
         if (read_bytes > 0) {
-            if (read_bytes != backend->xfer (READ, aiori_fh, (IOR_size_t *) read_buffer, read_bytes, &param)) {
+            if (read_bytes != (size_t) backend->xfer (READ, aiori_fh, (IOR_size_t *) read_buffer, read_bytes, &param)) {
                 FAIL("unable to read file");
             }
         }
@@ -1178,7 +1179,7 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
             fprintf( stdout, "V-1: rank %d stonewall hit with %lld items\n", rank, progress->items_done );
             fflush( stdout );
           }
-          long long unsigned max_iter;
+          long long unsigned max_iter = 0;
           MPI_Allreduce(& progress->items_done, & max_iter, 1, MPI_INT, MPI_MAX, testComm);
           // continue to the maximum...
           if (rank == 0 ) {
@@ -1764,7 +1765,7 @@ void display_freespace(char *testdirpath)
 void create_remove_directory_tree(int create,
                                   int currDepth, char* path, int dirNum, rank_progress_t * progress) {
 
-    int i;
+    unsigned i;
     char dir[MAX_LEN];
 
 
@@ -1851,12 +1852,12 @@ static void mdtest_iteration(int i, int j, MPI_Group testgroup, table_t * summar
       fflush(stdout);
   }
 
-  strcpy(testdir, testdirpath);
+  int pos = sprintf(testdir, "%s", testdirpath);
   if ( testdir[strlen( testdir ) - 1] != '/' ) {
-      strcat(testdir, "/");
+      pos += sprintf(& testdir[pos], "/");
   }
-  strcat(testdir, TEST_DIR);
-  sprintf(testdir, "%s.%d", testdir, j);
+  pos += sprintf(& testdir[pos], "%s", TEST_DIR);
+  pos += sprintf(& testdir[pos], ".%d", j);
 
   if (verbose >= 2 && rank == 0) {
       printf( "V-2: main (for j loop): making testdir, \"%s\"\n", testdir );

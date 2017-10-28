@@ -40,7 +40,7 @@
 
 #   define lseek _lseeki64
 #   define fsync _commit
-#   define mkdir(dir, mode) _mkdir(dir) 
+#   define mkdir(dir, mode) _mkdir(dir)
 #   define strcasecmp _stricmp
 #   define strncasecmp _strnicmp
 #   define srandom srand
@@ -101,8 +101,8 @@ extern int verbose;                            /* verbose output */
 #define VERBOSE_4          4
 #define VERBOSE_5          5
 
-#define MAX_STR            1024                /* max string length */  
-#define MAX_HINTS          16                  /* max number of hints */  
+#define MAX_STR            1024                /* max string length */
+#define MAX_HINTS          16                  /* max number of hints */
 #define MAX_RETRY          10000               /* max retries for POSIX xfer */
 #ifndef PATH_MAX
 #define PATH_MAX           4096
@@ -210,7 +210,7 @@ struct utsname {
     char nodename[257];
     char release [16];
     char version [16];
-    char machine [16];	
+    char machine [16];
 };
 
 extern int uname(struct utsname *name);

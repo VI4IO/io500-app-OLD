@@ -53,7 +53,12 @@ ior_aiori_t mpiio_aiori = {
         MPIIO_Delete,
         MPIIO_SetVersion,
         MPIIO_Fsync,
-        MPIIO_GetFileSize
+        MPIIO_GetFileSize,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL
 };
 
 /***************************** F U N C T I O N S ******************************/
@@ -412,7 +417,7 @@ static IOR_offset_t SeekOffset(MPI_File fd, IOR_offset_t offset,
                 if (param->filePerProc) {
                         tempOffset = tempOffset / param->transferSize;
                 } else {
-                        /* 
+                        /*
                          * this formula finds a file view offset for a task
                          * from an absolute offset
                          */

@@ -1292,7 +1292,7 @@ static void PrintRemoveTiming(double start, double finish, int rep)
  */
 static void RemoveFile(char *testFileName, int filePerProc, IOR_param_t * test)
 {
-        int tmpRankOffset;
+        int tmpRankOffset = 0;
         if (filePerProc) {
                 /* in random tasks, delete own file */
                 if (test->reorderTasksRandom == TRUE) {
@@ -1840,9 +1840,9 @@ static void *malloc_and_touch(size_t size)
 
 static void file_hits_histogram(IOR_param_t *params)
 {
-        int *rankoffs;
-        int *filecont;
-        int *filehits;
+        int *rankoffs = NULL;
+        int *filecont = NULL;
+        int *filehits = NULL;
         int ifile;
         int jfile;
 
@@ -2308,7 +2308,7 @@ static void ValidateTests(IOR_param_t * test)
 
         /* specific APIs */
         if ((strcmp(test->api, "MPIIO") == 0)
-            && (test->blockSize < sizeof(IOR_size_t)
+            && ( test->blockSize < sizeof(IOR_size_t)
                 || test->transferSize < sizeof(IOR_size_t)))
                 ERR("block/transfer size may not be smaller than IOR_size_t for MPIIO");
         if ((strcmp(test->api, "HDF5") == 0)
@@ -2534,7 +2534,7 @@ static IOR_offset_t *GetOffsetArrayRandom(IOR_param_t * test, int pretendRank,
 
 static IOR_offset_t WriteOrReadSingle(IOR_offset_t pairCnt, IOR_offset_t *offsetArray, int pretendRank,
   IOR_offset_t * transferCount, int * errors, IOR_param_t * test, int * fd, IOR_io_buffers* ioBuffers, int access){
-  IOR_offset_t amtXferred;
+  IOR_offset_t amtXferred = 0;
   IOR_offset_t transfer;
 
   void *buffer = ioBuffers->buffer;
