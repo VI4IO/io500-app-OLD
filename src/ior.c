@@ -2594,7 +2594,7 @@ static IOR_offset_t WriteOrRead(IOR_param_t * test, IOR_results_t * results, voi
         int errors = 0;
         IOR_offset_t amtXferred;
         IOR_offset_t transferCount = 0;
-        IOR_offset_t pairCnt = 0;
+        uint64_t pairCnt = 0;
         IOR_offset_t *offsetArray;
         int pretendRank;
         IOR_offset_t dataMoved = 0;     /* for data rate calculation */
@@ -2627,10 +2627,13 @@ static IOR_offset_t WriteOrRead(IOR_param_t * test, IOR_results_t * results, voi
                                     > test->deadlineForStonewalling)) || (test->stoneWallingWearOutIterations != 0 && pairCnt == test->stoneWallingWearOutIterations) ;
         }
         if (test->stoneWallingWearOut){
+          if (verbose >= VERBOSE_1){
+            printf("%d: stonewalling pairs accessed: %lld\n", rank, (long long) pairCnt);
+          }
           MPI_CHECK(MPI_Allreduce(& pairCnt, &results->pairs_accessed,
                                   1, MPI_LONG_LONG_INT, MPI_MAX, testComm), "cannot reduce pairs moved");
           if (verbose >= VERBOSE_1){
-            printf("%d: stonewalling pairs accessed globally: %lld this rank: %lld\n", rank, (long long) results->pairs_accessed, (long long) pairCnt);
+            printf("stonewalling pairs accessed globally: %lld\n", (long long) results->pairs_accessed);
           }
           if(pairCnt != results->pairs_accessed){
             // some work needs still to be done !

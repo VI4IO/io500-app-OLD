@@ -143,7 +143,7 @@ typedef struct
     int storeFileOffset;             /* use file offset as stored signature */
     int deadlineForStonewalling;     /* max time in seconds to run any test phase */
     int stoneWallingWearOut;         /* wear out the stonewalling, once the timout is over, each process has to write the same amount */
-    int stoneWallingWearOutIterations; /* the number of iterations for the stonewallingWearOut, needed for readBack */
+    uint64_t stoneWallingWearOutIterations; /* the number of iterations for the stonewallingWearOut, needed for readBack */
     int maxTimeDuration;             /* max time in minutes to run each test */
     int outlierThreshold;            /* warn on outlier N seconds from mean */
     int verbose;                     /* verbosity */
