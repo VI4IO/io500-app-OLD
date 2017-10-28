@@ -1182,10 +1182,13 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
           long long unsigned max_iter = 0;
           MPI_Allreduce(& progress->items_done, & max_iter, 1, MPI_INT, MPI_MAX, testComm);
           // continue to the maximum...
+          long long min_accessed = 0;
+          MPI_Reduce(& progress->items_done, &min_accessed,1, MPI_LONG_LONG_INT, MPI_MIN, 0, testComm);
           if (rank == 0 ) {
-            fprintf( stdout, "V-1: continue stonewall hit with %lld items\n",  max_iter);
+            fprintf( stdout, "V-1: continue stonewall hit min: %lld max: %lld\n", min_accessed, max_iter);
             fflush( stdout );
           }
+
           progress->stone_wall_timer_seconds = 0;
           progress->items_start = progress->items_done;
           progress->items_per_dir = max_iter;

@@ -2632,8 +2632,11 @@ static IOR_offset_t WriteOrRead(IOR_param_t * test, IOR_results_t * results, voi
           }
           MPI_CHECK(MPI_Allreduce(& pairCnt, &results->pairs_accessed,
                                   1, MPI_LONG_LONG_INT, MPI_MAX, testComm), "cannot reduce pairs moved");
-          if (verbose >= VERBOSE_1){
-            printf("stonewalling pairs accessed globally: %lld\n", (long long) results->pairs_accessed);
+          long long min_accessed = 0;
+          MPI_CHECK(MPI_Reduce(& pairCnt, &min_accessed,
+                                  1, MPI_LONG_LONG_INT, MPI_MIN, 0, testComm), "cannot reduce pairs moved");
+          if(rank == 0){
+            printf("stonewalling pairs accessed min: %lld max: %lld\n", min_accessed, (long long) results->pairs_accessed);
           }
           if(pairCnt != results->pairs_accessed){
             // some work needs still to be done !
