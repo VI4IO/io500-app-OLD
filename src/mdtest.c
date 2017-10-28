@@ -37,6 +37,8 @@
 #include <inttypes.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#include <getopt/optlist.h>
 #include "utilities.h"
 
 #if HAVE_SYS_PARAM_H
@@ -1774,7 +1776,7 @@ void create_remove_directory_tree(int create,
             }
 
             if (-1 == backend->mkdir (dir, DIRMODE, &param)) {
-                FAIL("Unable to create directory");
+                //FAIL("Unable to create directory");
             }
         }
 
@@ -2113,7 +2115,7 @@ void mdtest_init_args(){
 
 table_t * mdtest_run(int argc, char **argv) {
     mdtest_init_args();
-    int i, j, k, c;
+    int i, j, k;
     int nodeCount;
     MPI_Group worldgroup, testgroup;
     struct {
@@ -2159,13 +2161,16 @@ table_t * mdtest_run(int argc, char **argv) {
     }
 
     /* Parse command line options */
-    optind = 1; // reset getopt argument
-    while (1) {
-        c = getopt(argc, argv, "a:b:BcCd:De:Ef:Fhi:I:l:Ln:N:p:rR::s:StTuvV:w:W:yz:");
-        if (c == -1) {
-            break;
-        }
-        switch (c) {
+
+    option_t *optList, *thisOpt;
+    optList = GetOptList(argc, argv, "a:b:BcCd:De:Ef:Fhi:I:l:Ln:N:p:rR::s:StTuvV:w:W:yz:");
+
+
+    while (optList != NULL) {
+        thisOpt = optList;
+        optarg = thisOpt->argument;
+        optList = optList->next;
+        switch (thisOpt->option) {
         case 'a':
             backend_name = optarg; break;
         case 'b':
@@ -2429,7 +2434,7 @@ table_t * mdtest_run(int argc, char **argv) {
 
     /* setup summary table for recording results */
     summary_table = (table_t *)malloc(iterations * sizeof(table_t));
-    memset(summary_table, 0, iterations * sizeof(table_t));
+    memset(summary_table, 0, iterations * sizeof(table_t) );
     if (summary_table == NULL) {
         FAIL("out of memory");
     }

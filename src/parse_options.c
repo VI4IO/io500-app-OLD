@@ -21,6 +21,8 @@
 #include <ctype.h>
 #include <string.h>
 
+
+#include <getopt/optlist.h>
 #include "ior.h"
 #include "aiori.h"
 #include "parse_options.h"
@@ -449,22 +451,25 @@ IOR_test_t *ReadConfigScript(char *scriptName)
  */
 IOR_test_t *ParseCommandLine(int argc, char **argv)
 {
-        static const char *opts =
+        char * const opts =
           "a:A:b:BcCd:D:eEf:FgG:hHi:Ij:J:kKl:mM:nN:o:O:pPqQ:rRs:St:T:uU:vVwWxX:YzZ";
-        int c, i;
-        static IOR_test_t *tests = NULL;
-
-        /* suppress getopt() error message when a character is unrecognized */
-        opterr = 0;
+        int i;
+        IOR_test_t *tests = NULL;
+        char * optarg;
 
         init_IOR_Param_t(&initialTestParams);
         GetPlatformName(initialTestParams.platform);
         initialTestParams.writeFile = initialTestParams.readFile = FALSE;
         initialTestParams.checkWrite = initialTestParams.checkRead = FALSE;
 
-        optind = 1; // reset getopt argument
-        while ((c = getopt(argc, argv, opts)) != -1) {
-                switch (c) {
+        option_t *optList, *thisOpt;
+        optList = GetOptList(argc, argv, opts);
+
+        while (optList != NULL) {
+                thisOpt = optList;
+                optarg = thisOpt->argument;
+                optList = optList->next;
+                switch (thisOpt->option) {
                 case 'a':
                         strcpy(initialTestParams.api, optarg);
                         break;
@@ -647,14 +652,8 @@ IOR_test_t *ParseCommandLine(int argc, char **argv)
                 }
         }
 
-        for (i = optind; i < argc; i++)
-                fprintf(stdout, "non-option argument: %s\n", argv[i]);
-
-        /* If an IOR script was not used, initialize test queue to the defaults */
-        if (tests == NULL) {
-                tests = CreateTest(&initialTestParams, 0);
-                AllocResults(tests);
-        }
+        tests = CreateTest(&initialTestParams, 0);
+        AllocResults(tests);
 
         CheckRunSettings(tests);
 

@@ -31,7 +31,6 @@
 #   include <Windows.h>
 #   include <io.h>
 #   include <direct.h>
-#   include "win/getopt.h"
 
 #   define MAXPATHLEN 1024
 #   define F_OK 00
