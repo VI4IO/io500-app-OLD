@@ -1174,10 +1174,17 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
         /* create files */
         create_remove_items(0, 0, 1, 0, temp_path, 0, progress);
         if(stone_wall_timer_seconds){
+          if (verbose >= 1 ) {
+            fprintf( stdout, "V-1: rank %d stonewall hit with %lld items\n", rank, progress->items_done );
+            fflush( stdout );
+          }
           long long unsigned max_iter;
           MPI_Allreduce(& progress->items_done, & max_iter, 1, MPI_INT, MPI_MAX, testComm);
           // continue to the maximum...
-          printf("%d %ld\n", rank, max_iter);
+          if (rank == 0 ) {
+            fprintf( stdout, "V-1: continue stonewall hit with %lld items\n",  max_iter);
+            fflush( stdout );
+          }
           progress->stone_wall_timer_seconds = 0;
           progress->items_start = progress->items_done;
           progress->items_per_dir = max_iter;
@@ -2162,6 +2169,7 @@ table_t * mdtest_run(int argc, char **argv) {
 
     /* Parse command line options */
 
+    verbose = 0;
     option_t *optList, *thisOpt;
     optList = GetOptList(argc, argv, "a:b:BcCd:De:Ef:Fhi:I:l:Ln:N:p:rR::s:StTuvV:w:W:yz:");
 
