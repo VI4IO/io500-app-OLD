@@ -779,7 +779,7 @@ static void DisplayUsage(char **argv)
                 "OPTIONS:",
                 " -a S  api --  API for I/O [POSIX|MPIIO|HDF5|HDFS|S3|S3_EMC|NCMPI]",
                 " -A N  refNum -- user supplied reference number to include in the summary",
-                " -b N  blockSize -- contiguous bytes to write per task  (e.g.: 8, 4k, 2m, 1g)",
+                " -b N  blockSize -- contiguous bytes to write per task  (e.g.: 8, 4k, 2m, 1g, 1t, 1p)",
                 " -B    useO_DIRECT -- uses O_DIRECT for POSIX, bypassing I/O buffers",
                 " -c    collective -- collective I/O",
                 " -C    reorderTasks -- changes task ordering to n+1 ordering for readback",

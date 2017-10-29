@@ -55,6 +55,14 @@ static IOR_offset_t StringToBytes(char *size_str)
                 case 'G':
                         size <<= 30;
                         break;
+                case 't':
+                case 'T':
+                        size <<= 40;
+                        break;
+                case 'p':
+                case 'P':
+                        size <<= 50;
+                        break;
                 }
         } else if (rc == 0) {
                 size = -1;
