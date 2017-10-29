@@ -300,7 +300,7 @@ static void *POSIX_Create(char *testFileName, IOR_param_t * param)
                             O_CREAT | O_EXCL | O_RDWR | O_LOV_DELAY_CREATE;
                         *fd = open64(testFileName, fd_oflag, 0664);
                         if (*fd < 0) {
-                                fprintf(stdout, "\nUnable to open '%s': %s\n",
+                                fprintf(out_logfile, "\nUnable to open '%s': %s\n",
                                         testFileName, strerror(errno));
                                 MPI_CHECK(MPI_Abort(MPI_COMM_WORLD, -1),
                                           "MPI_Abort() error");
@@ -308,7 +308,7 @@ static void *POSIX_Create(char *testFileName, IOR_param_t * param)
                                 char *errmsg = "stripe already set";
                                 if (errno != EEXIST && errno != EALREADY)
                                         errmsg = strerror(errno);
-                                fprintf(stdout,
+                                fprintf(out_logfile,
                                         "\nError on ioctl for '%s' (%d): %s\n",
                                         testFileName, *fd, errmsg);
                                 MPI_CHECK(MPI_Abort(MPI_COMM_WORLD, -1),
@@ -387,7 +387,7 @@ static void *POSIX_Open(char *testFileName, IOR_param_t * param)
         if (param->lustre_ignore_locks) {
                 int lustre_ioctl_flags = LL_FILE_IGNORE_LOCK;
                 if (verbose >= VERBOSE_1) {
-                        fprintf(stdout,
+                        fprintf(out_logfile,
                                 "** Disabling lustre range locking **\n");
                 }
                 if (ioctl(*fd, LL_IOC_SETFLAGS, &lustre_ioctl_flags) == -1)
@@ -432,7 +432,7 @@ static IOR_offset_t POSIX_Xfer(int access, void *file, IOR_size_t * buffer,
                 /* write/read file */
                 if (access == WRITE) {  /* WRITE */
                         if (verbose >= VERBOSE_4) {
-                                fprintf(stdout,
+                                fprintf(out_logfile,
                                         "task %d writing to offset %lld\n",
                                         rank,
                                         param->offset + length - remaining);
@@ -444,7 +444,7 @@ static IOR_offset_t POSIX_Xfer(int access, void *file, IOR_size_t * buffer,
                                 POSIX_Fsync(&fd, param);
                 } else {        /* READ or CHECK */
                         if (verbose >= VERBOSE_4) {
-                                fprintf(stdout,
+                                fprintf(out_logfile,
                                         "task %d reading from offset %lld\n",
                                         rank,
                                         param->offset + length - remaining);
@@ -456,7 +456,7 @@ static IOR_offset_t POSIX_Xfer(int access, void *file, IOR_size_t * buffer,
                                 ERR("read() failed");
                 }
                 if (rc < remaining) {
-                        fprintf(stdout,
+                        fprintf(out_logfile,
                                 "WARNING: Task %d, partial %s, %lld of %lld bytes at offset %lld\n",
                                 rank,
                                 access == WRITE ? "write()" : "read()",

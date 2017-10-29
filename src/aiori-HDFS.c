@@ -238,11 +238,11 @@ static void *HDFS_Create_Or_Open( char *testFileName, IOR_param_t *param, unsign
 	}
 
 	if ( param->openFlags & IOR_EXCL ) {
-		fprintf( stdout, "Opening or creating a file in Exclusive mode is not implemented in HDFS\n" );
+		fprintf( out_logfile, "Opening or creating a file in Exclusive mode is not implemented in HDFS\n" );
 	}
 
 	if ( param->openFlags & IOR_APPEND ) {
-		fprintf( stdout, "Opening or creating a file for appending is not implemented in HDFS\n" );
+		fprintf( out_logfile, "Opening or creating a file for appending is not implemented in HDFS\n" );
 	}
 
 	/*
@@ -398,7 +398,7 @@ static IOR_offset_t HDFS_Xfer(int access, void *file, IOR_size_t * buffer,
 		/* write/read file */
 		if (access == WRITE) {	/* WRITE */
 			if (verbose >= VERBOSE_4) {
-				fprintf( stdout, "task %d writing to offset %lld\n",
+				fprintf( out_logfile, "task %d writing to offset %lld\n",
 						rank,
 						param->offset + length - remaining);
 			}
@@ -420,7 +420,7 @@ static IOR_offset_t HDFS_Xfer(int access, void *file, IOR_size_t * buffer,
 		}
 		else {				/* READ or CHECK */
 			if (verbose >= VERBOSE_4) {
-				fprintf( stdout, "task %d reading from offset %lld\n",
+				fprintf( out_logfile, "task %d reading from offset %lld\n",
 						rank,
 						param->offset + length - remaining );
 			}
@@ -444,7 +444,7 @@ static IOR_offset_t HDFS_Xfer(int access, void *file, IOR_size_t * buffer,
 
 
 		if ( rc < remaining ) {
-			fprintf(stdout, "WARNING: Task %d, partial %s, %lld of %lld bytes at offset %lld\n",
+			fprintf(out_logfile, "WARNING: Task %d, partial %s, %lld of %lld bytes at offset %lld\n",
 					rank,
 					access == WRITE ? "hdfsWrite()" : "hdfs_read()",
 					rc, remaining,
@@ -608,14 +608,14 @@ HDFS_GetFileSize(IOR_param_t * param,
 
 	/* file-info struct includes size in bytes */
 	if (param->verbose >= VERBOSE_4) {
-		printf("\thdfsGetPathInfo(%s) ...", testFileName);fflush(stdout);
+		printf("\thdfsGetPathInfo(%s) ...", testFileName);fflush(out_logfile);
 	}
 
 	hdfsFileInfo* info = hdfsGetPathInfo( param->hdfs_fs, testFileName );
 	if ( ! info )
 		ERR_SIMPLE( "hdfsGetPathInfo() failed" );
 	if (param->verbose >= VERBOSE_4) {
-		printf("done.\n");fflush(stdout);
+		printf("done.\n");fflush(out_logfile);
 	}
 
 	aggFileSizeFromStat = info->mSize;

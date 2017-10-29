@@ -34,11 +34,11 @@
 #define NCMPI_CHECK(NCMPI_RETURN, MSG) do {                              \
                                                                          \
     if (NCMPI_RETURN < 0) {                                              \
-        fprintf(stdout, "** error **\n");                                \
-        fprintf(stdout, "ERROR in %s (line %d): %s.\n",                  \
+        fprintf(out_logfile, "** error **\n");                                \
+        fprintf(out_logfile, "ERROR in %s (line %d): %s.\n",                  \
                 __FILE__, __LINE__, MSG);                                \
-        fprintf(stdout, "ERROR: %s.\n", ncmpi_strerror(NCMPI_RETURN));   \
-        fprintf(stdout, "** exiting **\n");                              \
+        fprintf(out_logfile, "ERROR: %s.\n", ncmpi_strerror(NCMPI_RETURN));   \
+        fprintf(out_logfile, "** exiting **\n");                              \
         exit(-1);                                                        \
     }                                                                    \
 } while(0)
@@ -85,9 +85,9 @@ static void *NCMPI_Create(char *testFileName, IOR_param_t * param)
         /* Wei-keng Liao: read and set MPI file hints from hintsFile */
         SetHints(&mpiHints, param->hintsFileName);
         if (rank == 0 && param->showHints) {
-                fprintf(stdout, "\nhints passed to MPI_File_open() {\n");
+                fprintf(out_logfile, "\nhints passed to MPI_File_open() {\n");
                 ShowHints(&mpiHints);
-                fprintf(stdout, "}\n");
+                fprintf(out_logfile, "}\n");
         }
 
         fd = (int *)malloc(sizeof(int));
@@ -103,9 +103,9 @@ static void *NCMPI_Create(char *testFileName, IOR_param_t * param)
     if (rank == 0 && param->showHints) {
         MPI_CHECK(ncmpi_get_file_info(*fd, &mpiHints),
                   "cannot get file info");
-        fprintf(stdout, "\nhints returned from opened file {\n");
+        fprintf(out_logfile, "\nhints returned from opened file {\n");
         ShowHints(&mpiHints);
-        fprintf(stdout, "}\n");
+        fprintf(out_logfile, "}\n");
     }
 */
 
@@ -130,9 +130,9 @@ static void *NCMPI_Open(char *testFileName, IOR_param_t * param)
         /* Wei-keng Liao: read and set MPI file hints from hintsFile */
         SetHints(&mpiHints, param->hintsFileName);
         if (rank == 0 && param->showHints) {
-                fprintf(stdout, "\nhints passed to MPI_File_open() {\n");
+                fprintf(out_logfile, "\nhints passed to MPI_File_open() {\n");
                 ShowHints(&mpiHints);
-                fprintf(stdout, "}\n");
+                fprintf(out_logfile, "}\n");
         }
 
         fd = (int *)malloc(sizeof(int));
@@ -148,9 +148,9 @@ static void *NCMPI_Open(char *testFileName, IOR_param_t * param)
     if (rank == 0 && param->showHints) {
         MPI_CHECK(ncmpi_get_file_info(*fd, &mpiHints),
                   "cannot get file info");
-        fprintf(stdout, "\nhints returned from opened file {\n");
+        fprintf(out_logfile, "\nhints returned from opened file {\n");
         ShowHints(&mpiHints);
-        fprintf(stdout, "}\n");
+        fprintf(out_logfile, "}\n");
     }
 */
 
@@ -354,25 +354,25 @@ static int GetFileMode(IOR_param_t * param)
                 fd_mode |= NC_NOWRITE;
         }
         if (param->openFlags & IOR_WRONLY) {
-                fprintf(stdout, "File write only not implemented in NCMPI\n");
+                fprintf(out_logfile, "File write only not implemented in NCMPI\n");
         }
         if (param->openFlags & IOR_RDWR) {
                 fd_mode |= NC_WRITE;
         }
         if (param->openFlags & IOR_APPEND) {
-                fprintf(stdout, "File append not implemented in NCMPI\n");
+                fprintf(out_logfile, "File append not implemented in NCMPI\n");
         }
         if (param->openFlags & IOR_CREAT) {
                 fd_mode |= NC_CLOBBER;
         }
         if (param->openFlags & IOR_EXCL) {
-                fprintf(stdout, "Exclusive access not implemented in NCMPI\n");
+                fprintf(out_logfile, "Exclusive access not implemented in NCMPI\n");
         }
         if (param->openFlags & IOR_TRUNC) {
-                fprintf(stdout, "File truncation not implemented in NCMPI\n");
+                fprintf(out_logfile, "File truncation not implemented in NCMPI\n");
         }
         if (param->openFlags & IOR_DIRECT) {
-                fprintf(stdout, "O_DIRECT not implemented in NCMPI\n");
+                fprintf(out_logfile, "O_DIRECT not implemented in NCMPI\n");
         }
 
         /* Wei-keng Liao: to enable > 4GB file size */

@@ -23,6 +23,7 @@
 
 
 #include <getopt/optlist.h>
+#include "utilities.h"
 #include "ior.h"
 #include "aiori.h"
 #include "parse_options.h"
@@ -163,7 +164,7 @@ void DecodeDirective(char *line, IOR_param_t *params)
 
         rc = sscanf(line, " %[^=# \t\r\n] = %[^# \t\r\n] ", option, value);
         if (rc != 2 && rank == 0) {
-                fprintf(stdout, "Syntax error in configuration options: %s\n",
+                fprintf(out_logfile, "Syntax error in configuration options: %s\n",
                         line);
                 MPI_CHECK(MPI_Abort(MPI_COMM_WORLD, -1), "MPI_Abort() error");
         }
@@ -335,7 +336,7 @@ void DecodeDirective(char *line, IOR_param_t *params)
                 params->summary_every_test = atoi(value);
         } else {
                 if (rank == 0)
-                        fprintf(stdout, "Unrecognized parameter \"%s\"\n",
+                        fprintf(out_logfile, "Unrecognized parameter \"%s\"\n",
                                 option);
                 MPI_CHECK(MPI_Abort(MPI_COMM_WORLD, -1), "MPI_Abort() error");
         }
@@ -564,7 +565,7 @@ IOR_test_t *ParseCommandLine(int argc, char **argv)
                                 initialTestParams.dataPacketType = offset;
                                 break;
                         default:
-                                fprintf(stdout,
+                                fprintf(out_logfile,
                                         "Unknown arguement for -l  %s generic assumed\n", optarg);
                                 break;
                         }
@@ -654,7 +655,7 @@ IOR_test_t *ParseCommandLine(int argc, char **argv)
                         initialTestParams.reorderTasksRandom = TRUE;
                         break;
                 default:
-                        fprintf(stdout,
+                        fprintf(out_logfile,
                                 "ParseCommandLine: unknown option `-%c'.\n",
                                 optopt);
                 }

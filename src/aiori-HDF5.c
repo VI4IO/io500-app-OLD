@@ -50,16 +50,16 @@
     char   resultString[1024];                                           \
                                                                          \
     if (HDF5_RETURN < 0) {                                               \
-        fprintf(stdout, "** error **\n");                                \
-        fprintf(stdout, "ERROR in %s (line %d): %s.\n",                  \
+        fprintf(out_logfile, "** error **\n");                                \
+        fprintf(out_logfile, "ERROR in %s (line %d): %s.\n",                  \
                 __FILE__, __LINE__, MSG);                                \
         strcpy(resultString, H5Eget_major((H5E_major_t)HDF5_RETURN));    \
         if (strcmp(resultString, "Invalid major error number") != 0)     \
-            fprintf(stdout, "HDF5 %s\n", resultString);                  \
+            fprintf(out_logfile, "HDF5 %s\n", resultString);                  \
         strcpy(resultString, H5Eget_minor((H5E_minor_t)HDF5_RETURN));    \
         if (strcmp(resultString, "Invalid minor error number") != 0)     \
-            fprintf(stdout, "%s\n", resultString);                       \
-        fprintf(stdout, "** exiting **\n");                              \
+            fprintf(out_logfile, "%s\n", resultString);                       \
+        fprintf(out_logfile, "** exiting **\n");                              \
         exit(-1);                                                        \
     }                                                                    \
 } while(0)
@@ -67,14 +67,14 @@
 #define HDF5_CHECK(HDF5_RETURN, MSG) do {                                \
                                                                          \
     if (HDF5_RETURN < 0) {                                               \
-        fprintf(stdout, "** error **\n");                                \
-        fprintf(stdout, "ERROR in %s (line %d): %s.\n",                  \
+        fprintf(out_logfile, "** error **\n");                                \
+        fprintf(out_logfile, "ERROR in %s (line %d): %s.\n",                  \
                 __FILE__, __LINE__, MSG);                                \
         /*                                                               \
          * H5Eget_msg(hid_t mesg_id, H5E_type_t* mesg_type,              \
          *            char* mesg, size_t size)                           \
          */                                                              \
-        fprintf(stdout, "** exiting **\n");                              \
+        fprintf(out_logfile, "** exiting **\n");                              \
         exit(-1);                                                        \
     }                                                                    \
 } while(0)
@@ -158,13 +158,13 @@ static void *HDF5_Open(char *testFileName, IOR_param_t * param)
                 fd_mode |= H5F_ACC_RDONLY;
         }
         if (param->openFlags & IOR_WRONLY) {
-                fprintf(stdout, "File write only not implemented in HDF5\n");
+                fprintf(out_logfile, "File write only not implemented in HDF5\n");
         }
         if (param->openFlags & IOR_RDWR) {
                 fd_mode |= H5F_ACC_RDWR;
         }
         if (param->openFlags & IOR_APPEND) {
-                fprintf(stdout, "File append not implemented in HDF5\n");
+                fprintf(out_logfile, "File append not implemented in HDF5\n");
         }
         if (param->openFlags & IOR_CREAT) {
                 fd_mode |= H5F_ACC_CREAT;
@@ -176,7 +176,7 @@ static void *HDF5_Open(char *testFileName, IOR_param_t * param)
                 fd_mode |= H5F_ACC_TRUNC;
         }
         if (param->openFlags & IOR_DIRECT) {
-                fprintf(stdout, "O_DIRECT not implemented in HDF5\n");
+                fprintf(out_logfile, "O_DIRECT not implemented in HDF5\n");
         }
 
         /* set up file creation property list */
@@ -210,9 +210,9 @@ static void *HDF5_Open(char *testFileName, IOR_param_t * param)
          */
         /* show hints passed to file */
         if (rank == 0 && param->showHints) {
-                fprintf(stdout, "\nhints passed to access property list {\n");
+                fprintf(out_logfile, "\nhints passed to access property list {\n");
                 ShowHints(&mpiHints);
-                fprintf(stdout, "}\n");
+                fprintf(out_logfile, "}\n");
         }
         HDF5_CHECK(H5Pset_fapl_mpio(accessPropList, comm, mpiHints),
                    "cannot set file access property list");
@@ -245,10 +245,10 @@ static void *HDF5_Open(char *testFileName, IOR_param_t * param)
                 HDF5_CHECK(H5Pget_fapl_mpio(apl, &comm, &mpiHintsCheck),
                            "cannot get info object through HDF5");
                 if (rank == 0) {
-                        fprintf(stdout,
+                        fprintf(out_logfile,
                                 "\nhints returned from opened file (HDF5) {\n");
                         ShowHints(&mpiHintsCheck);
-                        fprintf(stdout, "}\n");
+                        fprintf(out_logfile, "}\n");
                         if (1 == 1) {   /* request the MPIIO file handle and its hints */
                                 MPI_File *fd_mpiio;
                                 HDF5_CHECK(H5Fget_vfd_handle
@@ -257,10 +257,10 @@ static void *HDF5_Open(char *testFileName, IOR_param_t * param)
                                 MPI_CHECK(MPI_File_get_info
                                           (*fd_mpiio, &mpiHintsCheck),
                                           "cannot get info object through MPIIO");
-                                fprintf(stdout,
+                                fprintf(out_logfile,
                                         "\nhints returned from opened file (MPIIO) {\n");
                                 ShowHints(&mpiHintsCheck);
-                                fprintf(stdout, "}\n");
+                                fprintf(out_logfile, "}\n");
                         }
                 }
                 MPI_CHECK(MPI_Barrier(testComm), "barrier error");
@@ -534,7 +534,7 @@ static void SetupDataSet(void *fd, IOR_param_t * param)
 #if (H5_VERS_MAJOR > 0 && H5_VERS_MINOR > 5)
                 if (param->noFill == TRUE) {
                         if (rank == 0 && verbose >= VERBOSE_1) {
-                                fprintf(stdout, "\nusing 'no fill' option\n");
+                                fprintf(out_logfile, "\nusing 'no fill' option\n");
                         }
                         HDF5_CHECK(H5Pset_fill_time(dataSetPropList,
                                                     H5D_FILL_TIME_NEVER),

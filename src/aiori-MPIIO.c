@@ -114,10 +114,10 @@ static void *MPIIO_Open(char *testFileName, IOR_param_t * param)
                 fd_mode |= MPI_MODE_EXCL;
         }
         if (param->openFlags & IOR_TRUNC) {
-                fprintf(stdout, "File truncation not implemented in MPIIO\n");
+                fprintf(out_logfile, "File truncation not implemented in MPIIO\n");
         }
         if (param->openFlags & IOR_DIRECT) {
-                fprintf(stdout, "O_DIRECT not implemented in MPIIO\n");
+                fprintf(out_logfile, "O_DIRECT not implemented in MPIIO\n");
         }
 
         /*
@@ -142,9 +142,9 @@ static void *MPIIO_Open(char *testFileName, IOR_param_t * param)
          */
         /* show hints passed to file */
         if (rank == 0 && param->showHints) {
-                fprintf(stdout, "\nhints passed to MPI_File_open() {\n");
+                fprintf(out_logfile, "\nhints passed to MPI_File_open() {\n");
                 ShowHints(&mpiHints);
-                fprintf(stdout, "}\n");
+                fprintf(out_logfile, "}\n");
         }
         MPI_CHECK(MPI_File_open(comm, testFileName, fd_mode, mpiHints, fd),
                   "cannot open file");
@@ -155,9 +155,9 @@ static void *MPIIO_Open(char *testFileName, IOR_param_t * param)
                         MPI_CHECK(MPI_Info_free(&mpiHints), "MPI_Info_free failed");
                 MPI_CHECK(MPI_File_get_info(*fd, &mpiHints),
                           "cannot get file info");
-                fprintf(stdout, "\nhints returned from opened file {\n");
+                fprintf(out_logfile, "\nhints returned from opened file {\n");
                 ShowHints(&mpiHints);
-                fprintf(stdout, "}\n");
+                fprintf(out_logfile, "}\n");
         }
 
         /* preallocate space for file */
@@ -324,7 +324,7 @@ static IOR_offset_t MPIIO_Xfer(int access, void *fd, IOR_size_t * buffer,
                                  *                            MPI_BYTE, &status),
                                  *             "cannot access shared, collective");
                                  */
-                                fprintf(stdout,
+                                fprintf(out_logfile,
                                         "useSharedFilePointer not implemented\n");
                         }
                 } else {

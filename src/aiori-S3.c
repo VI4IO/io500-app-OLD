@@ -177,22 +177,22 @@ ior_aiori_t s3_emc_aiori = {
 /* modelled on similar macros in iordef.h */
 #define CURL_ERR(MSG, CURL_ERRNO, PARAM)										\
 	do {																					\
-		fprintf(stdout, "ior ERROR: %s: %s (curl-errno=%d) (%s:%d)\n",	\
+		fprintf(out_logfile, "ior ERROR: %s: %s (curl-errno=%d) (%s:%d)\n",	\
 				  MSG, curl_easy_strerror(CURL_ERRNO), CURL_ERRNO,			\
 				  __FILE__, __LINE__);												\
-		fflush(stdout);																\
+		fflush(out_logfile);																\
 		MPI_Abort((PARAM)->testComm, -1);										\
 	} while (0)
-	
+
 
 #define CURL_WARN(MSG, CURL_ERRNO)													\
 	do {																						\
-		fprintf(stdout, "ior WARNING: %s: %s (curl-errno=%d) (%s:%d)\n",	\
+		fprintf(out_logfile, "ior WARNING: %s: %s (curl-errno=%d) (%s:%d)\n",	\
 				  MSG, curl_easy_strerror(CURL_ERRNO), CURL_ERRNO,				\
 				  __FILE__, __LINE__);													\
-		fflush(stdout);																	\
+		fflush(out_logfile);																	\
 	} while (0)
-	
+
 
 
 /* buffer is used to generate URLs, err_msgs, etc */
@@ -314,11 +314,11 @@ s3_connect( IOR_param_t* param ) {
    if (rank == 0) {
       AWS4C_CHECK( s3_head(param->io_buf, "") );
       if ( param->io_buf->code == 404 ) {					// "404 Not Found"
-         printf("  bucket '%s' doesn't exist\n", bucket_name);
+         fprintf(out_logfile, "  bucket '%s' doesn't exist\n", bucket_name);
 
          AWS4C_CHECK( s3_put(param->io_buf, "") );	/* creates URL as bucket + obj */
          AWS4C_CHECK_OK(     param->io_buf );		// assure "200 OK"
-         printf("created bucket '%s'\n", bucket_name);
+         fprintf(out_logfile, "created bucket '%s'\n", bucket_name);
       }
       else {														// assure "200 OK"
          AWS4C_CHECK_OK( param->io_buf );
@@ -412,10 +412,10 @@ S3_Create_Or_Open_internal(char*         testFileName,
 
 	/* Check for unsupported flags */
 	if ( param->openFlags & IOR_EXCL ) {
-		fprintf( stdout, "Opening in Exclusive mode is not implemented in S3\n" );
+		fprintf( out_logfile, "Opening in Exclusive mode is not implemented in S3\n" );
 	}
 	if ( param->useO_DIRECT == TRUE ) {
-		fprintf( stdout, "Direct I/O mode is not implemented in S3\n" );
+		fprintf( out_logfile, "Direct I/O mode is not implemented in S3\n" );
 	}
 
 	// easier to think
@@ -446,7 +446,7 @@ S3_Create_Or_Open_internal(char*         testFileName,
 			if ( n_to_n || (rank == 0) ) {
 
 				// rank0 handles truncate
-				if ( needs_reset) { 
+				if ( needs_reset) {
 					aws_iobuf_reset(param->io_buf);
 					AWS4C_CHECK( s3_put(param->io_buf, testFileName) ); /* 0-length write */
 					AWS4C_CHECK_OK( param->io_buf );
@@ -507,10 +507,10 @@ S3_Create_Or_Open_internal(char*         testFileName,
 			if (needs_reset) {
 
             if (verbose >= VERBOSE_3) {
-               fprintf( stdout, "rank %d resetting\n",
+               fprintf( out_logfile, "rank %d resetting\n",
                         rank);
             }
-            
+
 				aws_iobuf_reset(param->io_buf);
 				AWS4C_CHECK( s3_put(param->io_buf, testFileName) );
 				AWS4C_CHECK_OK( param->io_buf );
@@ -641,7 +641,7 @@ EMC_Open( char *testFileName, IOR_param_t * param ) {
 /* In the EMC case, instead of Multi-Part Upload we can use HTTP
  * "byte-range" headers to write parts of a single object.  This appears to
  * have several advantages over the S3 MPU spec:
- * 
+ *
  * (a) no need for a special "open" operation, to capture an "UploadID".
  *     Instead we simply write byte-ranges, and the server-side resolves
  *     any races, producing a single winner.  In the IOR case, there should
@@ -700,7 +700,7 @@ S3_Xfer_internal(int          access,
 	if (access == WRITE) {	/* WRITE */
 
 		if (verbose >= VERBOSE_3) {
-			fprintf( stdout, "rank %d writing length=%lld to offset %lld\n",
+			fprintf( out_logfile, "rank %d writing length=%lld to offset %lld\n",
 						rank,
                   remaining,
 						param->offset + length - remaining);
@@ -744,7 +744,7 @@ S3_Xfer_internal(int          access,
 
 
          //         if (verbose >= VERBOSE_3) {
-         //            fprintf( stdout, "rank %d of %d writing (%s,%s) part_number %lld\n",
+         //            fprintf( out_logfile, "rank %d of %d writing (%s,%s) part_number %lld\n",
          //                     rank,
          //                     param->numTasks,
          //                     (n_to_1 ? "N:1" : "N:N"),
@@ -781,7 +781,7 @@ S3_Xfer_internal(int          access,
          //			}
 
          if (verbose >= VERBOSE_3) {
-            fprintf( stdout, "rank %d of %d (%s,%s) offset %lld, part# %lld --> ETag %s\n",
+            fprintf( out_logfile, "rank %d of %d (%s,%s) offset %lld, part# %lld --> ETag %s\n",
                      rank,
                      param->numTasks,
                      (n_to_1 ? "N:1" : "N:N"),
@@ -808,7 +808,7 @@ S3_Xfer_internal(int          access,
 				printf("rank %d: part %d = ETag %s\n", rank, part_number, param->io_buf->eTag);
 			}
 
-			// drop ptrs to <data_ptr>, in param->io_buf 
+			// drop ptrs to <data_ptr>, in param->io_buf
 			aws_iobuf_reset(param->io_buf);
 		}
 		else {	 // use EMC's byte-range write-support, instead of MPU
@@ -830,7 +830,7 @@ S3_Xfer_internal(int          access,
 			AWS4C_CHECK   ( s3_put(param->io_buf, file) );
 			AWS4C_CHECK_OK( param->io_buf );
 
-			// drop ptrs to <data_ptr>, in param->io_buf 
+			// drop ptrs to <data_ptr>, in param->io_buf
 			aws_iobuf_reset(param->io_buf);
 		}
 
@@ -843,7 +843,7 @@ S3_Xfer_internal(int          access,
 	else {				/* READ or CHECK */
 
 		if (verbose >= VERBOSE_3) {
-			fprintf( stdout, "rank %d reading from offset %lld\n",
+			fprintf( out_logfile, "rank %d reading from offset %lld\n",
 						rank,
 						param->offset + length - remaining );
 		}
@@ -867,7 +867,7 @@ S3_Xfer_internal(int          access,
 			ERR_SIMPLE(buff);
 		}
 
-		// drop refs to <data_ptr>, in param->io_buf 
+		// drop refs to <data_ptr>, in param->io_buf
 		aws_iobuf_reset(param->io_buf);
 	}
 
@@ -1126,7 +1126,7 @@ S3_Close_internal( void*         fd,
 						start_multiplier = ETAG_SIZE;				/* one ETag */
 						stride           = etag_data_size;		/* one rank's-worth of Etag data */
 					}
-						
+
 
 					xml = aws_iobuf_new();
 					aws_iobuf_growth_size(xml, 1024 * 8);
@@ -1252,7 +1252,7 @@ S3_Close_internal( void*         fd,
 			if (n_to_1) {
             MPI_CHECK(MPI_Barrier(param->testComm), "barrier error");
 				if (param->verbose >= VERBOSE_2)
-               printf("rank %d: passed barrier\n", rank);
+               fprintf(out_logfile, "rank %d: passed barrier\n", rank);
          }
 		}
 
@@ -1305,7 +1305,7 @@ S3_Delete( char *testFileName, IOR_param_t * param ) {
 #if 0
 	// EMC BUG: If file was written with appends, and is deleted,
 	//      Then any future recreation will result in an object that can't be read.
-	//      this 
+	//      this
 	AWS4C_CHECK( s3_delete(param->io_buf, testFileName) );
 #else
 	// just replace with a zero-length object for now
@@ -1334,7 +1334,7 @@ EMC_Delete( char *testFileName, IOR_param_t * param ) {
 #if 0
 	// EMC BUG: If file was written with appends, and is deleted,
 	//      Then any future recreation will result in an object that can't be read.
-	//      this 
+	//      this
 	AWS4C_CHECK( s3_delete(param->io_buf, testFileName) );
 #else
 	// just replace with a zero-length object for now
@@ -1408,7 +1408,7 @@ S3_GetFileSize(IOR_param_t * param,
 	aggFileSizeFromStat = param->io_buf->contentLen;
 
    if (param->verbose >= VERBOSE_2) {
-      printf("\trank %d: file-size %llu\n", rank, aggFileSizeFromStat);
+      fprintf(out_logfile, "\trank %d: file-size %llu\n", rank, aggFileSizeFromStat);
    }
 
 	if ( param->filePerProc == TRUE ) {

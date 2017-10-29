@@ -55,7 +55,7 @@ int      rankOffset = 0;
 int      tasksPerNode = 0;           /* tasks per node */
 int      verbose = VERBOSE_0;        /* verbose output */
 MPI_Comm testComm;
-FILE * out;
+FILE * out_logfile;
 
 /***************************** F U N C T I O N S ******************************/
 
@@ -122,9 +122,9 @@ void DumpBuffer(void *buffer,
            to assume that it must always be */
         for (i = 0; i < ((size / sizeof(IOR_size_t)) / 4); i++) {
                 for (j = 0; j < 4; j++) {
-                        fprintf(stdout, IOR_format" ", dumpBuf[4 * i + j]);
+                        fprintf(out_logfile, IOR_format" ", dumpBuf[4 * i + j]);
                 }
-                fprintf(stdout, "\n");
+                fprintf(out_logfile, "\n");
         }
         return;
 }                               /* DumpBuffer() */
@@ -190,7 +190,7 @@ void OutputToRoot(int numTasks, MPI_Comm comm, char *stringToDisplay)
         /* display strings */
         if (rank == 0) {
                 for (i = 0; i < numTasks; i++) {
-                        fprintf(stdout, "%s\n", stringArray[i]);
+                        fprintf(out_logfile, "%s\n", stringArray[i]);
                 }
         }
 
@@ -219,7 +219,7 @@ void ExtractHint(char *settingVal, char *valueVal, char *hintString)
                 tmpPtr2 = (char *)strstr(settingPtr, "IOR_HINT__GPFS__");
                 if (tmpPtr1 == tmpPtr2) {
                         settingPtr += strlen("IOR_HINT__GPFS__");
-                        fprintf(stdout,
+                        fprintf(out_logfile,
                                 "WARNING: Unable to set GPFS hints (not implemented.)\n");
                 }
         }
@@ -306,7 +306,7 @@ void ShowHints(MPI_Info * mpiHints)
                 MPI_CHECK(MPI_Info_get(*mpiHints, key, MPI_MAX_INFO_VAL - 1,
                                        value, &flag),
                           "cannot get info object value");
-                fprintf(stdout, "\t%s = %s\n", key, value);
+                fprintf(out_logfile, "\t%s = %s\n", key, value);
         }
 }
 
@@ -401,14 +401,14 @@ void ShowFileSystemSize(char *fileSystem)
         if (realpath(fileSystem, realPath) == NULL) {
                 ERR("unable to use realpath()");
         }
-        fprintf(stdout, "Path: %s\n", realPath);
-        fprintf(stdout, "FS: %.1f %s   Used FS: %2.1f%%   ",
+        fprintf(out_logfile, "Path: %s\n", realPath);
+        fprintf(out_logfile, "FS: %.1f %s   Used FS: %2.1f%%   ",
                 totalFileSystemSizeHR, fileSystemUnitStr,
                 usedFileSystemPercentage);
-        fprintf(stdout, "Inodes: %.1f Mi   Used Inodes: %2.1f%%\n",
+        fprintf(out_logfile, "Inodes: %.1f Mi   Used Inodes: %2.1f%%\n",
                 (double)totalInodes / (double)(1<<20),
                 usedInodePercentage);
-        fflush(stdout);
+        fflush(out_logfile);
 #endif /* !_WIN32 */
 
         return;

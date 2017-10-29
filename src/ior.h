@@ -82,6 +82,7 @@ typedef struct IO_BUFFERS
 
 typedef struct
 {
+    FILE * out_logfile;
     char debug[MAX_STR];             /* debug info string */
     unsigned int mode;               /* file permissions */
     unsigned int openFlags;          /* open flags (see also <open>) */
@@ -234,6 +235,6 @@ void init_IOR_Param_t(IOR_param_t *p);
 /*
  * This function runs IOR given by command line, useful for testing
  */
-IOR_test_t * ior_run(int argc, char **argv);
+IOR_test_t * ior_run(int argc, char **argv, MPI_Comm world_com, FILE * out_logfile);
 
 #endif /* !_IOR_H */

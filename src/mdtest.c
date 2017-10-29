@@ -175,19 +175,19 @@ enum {MK_UNI_DIR, STAT_SUB_DIR, READ_SUB_DIR, RM_SUB_DIR, RM_UNI_DIR};
 
 #ifdef __linux__
 #define FAIL(msg) do {                                                  \
-        fprintf(stdout, "%s: Process %d(%s): FAILED in %s, %s: %s\n",   \
+        fprintf(out_logfile, "%s: Process %d(%s): FAILED in %s, %s: %s\n",   \
                 print_timestamp(), rank, hostname, __func__,            \
                 msg, strerror(errno));                                  \
-        fflush(stdout);                                                 \
-        MPI_Abort(MPI_COMM_WORLD, 1);                                   \
+        fflush(out_logfile);                                                 \
+        MPI_Abort(testComm, 1);                                   \
     } while(0)
 #else
 #define FAIL(msg) do {                                                  \
-        fprintf(stdout, "%s: Process %d(%s): FAILED at %d, %s: %s\n",   \
+        fprintf(out_logfile, "%s: Process %d(%s): FAILED at %d, %s: %s\n",   \
                 print_timestamp(), rank, hostname, __LINE__,            \
                 msg, strerror(errno));                                  \
-        fflush(stdout);                                                 \
-        MPI_Abort(MPI_COMM_WORLD, 1);                                   \
+        fflush(out_logfile);                                                 \
+        MPI_Abort(testComm, 1);                                   \
     } while(0)
 #endif
 
@@ -197,10 +197,10 @@ static char *print_timestamp() {
 
 
     if (( rank == 0 ) && ( verbose >= 1 )) {
-        fprintf( stdout, "V-1: Entering print_timestamp...\n" );
+        fprintf( out_logfile, "V-1: Entering print_timestamp...\n" );
     }
 
-    fflush(stdout);
+    fflush(out_logfile);
     cur_timestamp = time(NULL);
     strftime(datestring, 80, "%m/%d/%Y %T", localtime(&cur_timestamp));
 
@@ -213,7 +213,7 @@ int count_tasks_per_node(void) {
     MPI_Comm shared_comm;
     int rc, count;
 
-    MPI_Comm_split_type (MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL,
+    MPI_Comm_split_type (testComm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL,
                          &shared_comm);
 
     MPI_Comm_size (shared_comm, &count);
@@ -231,8 +231,8 @@ int count_tasks_per_node(void) {
     MPI_Status status;
 
     if (( rank == 0 ) && ( verbose >= 1 )) {
-        fprintf( stdout, "V-1: Entering count_tasks_per_node...\n" );
-        fflush( stdout );
+        fprintf( out_logfile, "V-1: Entering count_tasks_per_node...\n" );
+        fflush( out_logfile );
     }
 
     if (gethostname(localhost, MAX_LEN) != 0) {
@@ -242,16 +242,16 @@ int count_tasks_per_node(void) {
         /* MPI_receive all hostnames, and compare to local hostname */
         for (i = 0; i < size-1; i++) {
             MPI_Recv(hostname, MAX_LEN, MPI_CHAR, MPI_ANY_SOURCE,
-                     MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+                     MPI_ANY_TAG, testComm, &status);
             if (strcmp(hostname, localhost) == 0) {
                 count++;
             }
         }
     } else {
         /* MPI_send hostname to root node */
-        MPI_Send(localhost, MAX_LEN, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
+        MPI_Send(localhost, MAX_LEN, MPI_CHAR, 0, 0, testComm);
     }
-    MPI_Bcast(&count, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&count, 1, MPI_INT, 0, testComm);
 
     return(count);
 }
@@ -261,14 +261,14 @@ void delay_secs(int delay) {
 
 
     if (( rank == 0 ) && ( verbose >= 1 )) {
-        fprintf( stdout, "V-1: Entering delay_secs...\n" );
-        fflush( stdout );
+        fprintf( out_logfile, "V-1: Entering delay_secs...\n" );
+        fflush( out_logfile );
     }
 
     if (rank == 0 && delay > 0) {
         if (verbose >= 1) {
-            fprintf(stdout, "delaying %d seconds . . .\n", delay);
-            fflush(stdout);
+            fprintf(out_logfile, "delaying %d seconds . . .\n", delay);
+            fflush(out_logfile);
         }
         sleep(delay);
     }
@@ -281,8 +281,8 @@ void offset_timers(double * t, int tcount) {
 
 
     if (( rank == 0 ) && ( verbose >= 1 )) {
-        fprintf( stdout, "V-1: Entering offset_timers...\n" );
-        fflush( stdout );
+        fprintf( out_logfile, "V-1: Entering offset_timers...\n" );
+        fflush( out_logfile );
     }
 
     toffset = MPI_Wtime() - t[tcount];
@@ -298,8 +298,8 @@ void parse_dirpath(char *dirpath_arg) {
 
 
     if (( rank == 0 ) && ( verbose >= 1 )) {
-        fprintf( stdout, "V-1: Entering parse_dirpath...\n" );
-        fflush( stdout );
+        fprintf( out_logfile, "V-1: Entering parse_dirpath...\n" );
+        fflush( out_logfile );
     }
 
     tmp = dirpath_arg;
@@ -333,8 +333,8 @@ void unique_dir_access(int opt, char *to) {
 
 
     if (( rank == 0 ) && ( verbose >= 1 )) {
-        fprintf( stdout, "V-1: Entering unique_dir_access...\n" );
-        fflush( stdout );
+        fprintf( out_logfile, "V-1: Entering unique_dir_access...\n" );
+        fflush( out_logfile );
     }
 
     if (opt == MK_UNI_DIR) {
@@ -359,15 +359,15 @@ static void create_remove_dirs (const char *path, bool create, uint64_t itemNum)
         ( verbose >= 3 )                                      &&
         (itemNum % ITEM_COUNT==0 && (itemNum != 0))) {
 
-        printf("V-3: %s dir: "LLU"\n", operation, itemNum);
-        fflush(stdout);
+        fprintf(out_logfile, "V-3: %s dir: "LLU"\n", operation, itemNum);
+        fflush(out_logfile);
     }
 
     //create dirs
     sprintf(curr_item, "%s/dir.%s%" PRIu64, path, create ? mk_name : rm_name, itemNum);
     if (rank == 0 && verbose >= 3) {
-        printf("V-3: create_remove_items_helper (dirs %s): curr_item is \"%s\"\n", operation, curr_item);
-        fflush(stdout);
+        fprintf(out_logfile, "V-3: create_remove_items_helper (dirs %s): curr_item is \"%s\"\n", operation, curr_item);
+        fflush(out_logfile);
     }
 
     if (create) {
@@ -388,15 +388,15 @@ static void remove_file (const char *path, uint64_t itemNum) {
         ( verbose >= 3 )                                    &&
         (itemNum % ITEM_COUNT==0 && (itemNum != 0))) {
 
-        printf("V-3: remove file: "LLU"\n", itemNum);
-        fflush(stdout);
+        fprintf(out_logfile, "V-3: remove file: "LLU"\n", itemNum);
+        fflush(out_logfile);
     }
 
     //remove files
     sprintf(curr_item, "%s/file.%s"LLU"", path, rm_name, itemNum);
     if (rank == 0 && verbose >= 3) {
-        printf("V-3: create_remove_items_helper (non-dirs remove): curr_item is \"%s\"\n", curr_item);
-        fflush(stdout);
+        fprintf(out_logfile, "V-3: create_remove_items_helper (non-dirs remove): curr_item is \"%s\"\n", curr_item);
+        fflush(out_logfile);
     }
 
     if (!(shared_file && rank != 0)) {
@@ -412,23 +412,23 @@ static void create_file (const char *path, uint64_t itemNum) {
         ( verbose >= 3 )                                          &&
         (itemNum % ITEM_COUNT==0 && (itemNum != 0))) {
 
-        printf("V-3: create file: "LLU"\n", itemNum);
-        fflush(stdout);
+        fprintf(out_logfile, "V-3: create file: "LLU"\n", itemNum);
+        fflush(out_logfile);
     }
 
     //create files
     sprintf(curr_item, "%s/file.%s"LLU"", path, mk_name, itemNum);
     if (rank == 0 && verbose >= 3) {
-        printf("V-3: create_remove_items_helper (non-dirs create): curr_item is \"%s\"\n", curr_item);
-        fflush(stdout);
+        fprintf(out_logfile, "V-3: create_remove_items_helper (non-dirs create): curr_item is \"%s\"\n", curr_item);
+        fflush(out_logfile);
     }
 
     if (collective_creates) {
         param.openFlags = IOR_WRONLY;
 
         if (rank == 0 && verbose >= 3) {
-            printf( "V-3: create_remove_items_helper (collective): open...\n" );
-            fflush( stdout );
+            fprintf(out_logfile,  "V-3: create_remove_items_helper (collective): open...\n" );
+            fflush( out_logfile );
         }
 
         aiori_fh = backend->open (curr_item, &param);
@@ -444,8 +444,8 @@ static void create_file (const char *path, uint64_t itemNum) {
         param.filePerProc = !shared_file;
 
         if (rank == 0 && verbose >= 3) {
-            printf( "V-3: create_remove_items_helper (non-collective, shared): open...\n" );
-            fflush( stdout );
+            fprintf(out_logfile,  "V-3: create_remove_items_helper (non-collective, shared): open...\n" );
+            fflush( out_logfile );
         }
 
         aiori_fh = backend->create (curr_item, &param);
@@ -456,8 +456,8 @@ static void create_file (const char *path, uint64_t itemNum) {
 
     if (write_bytes > 0) {
         if (rank == 0 && verbose >= 3) {
-            printf( "V-3: create_remove_items_helper: write...\n" );
-            fflush( stdout );
+            fprintf(out_logfile,  "V-3: create_remove_items_helper: write...\n" );
+            fflush( out_logfile );
         }
 
         /*
@@ -472,8 +472,8 @@ static void create_file (const char *path, uint64_t itemNum) {
     }
 
     if (rank == 0 && verbose >= 3) {
-        printf( "V-3: create_remove_items_helper: close...\n" );
-        fflush( stdout );
+        fprintf(out_logfile,  "V-3: create_remove_items_helper: close...\n" );
+        fflush( out_logfile );
     }
 
     backend->close (aiori_fh, &param);
@@ -486,8 +486,8 @@ void create_remove_items_helper(const int dirs, const int create, const char *pa
     char curr_item[MAX_LEN];
 
     if (( rank == 0 ) && ( verbose >= 1 )) {
-        fprintf( stdout, "V-1: Entering create_remove_items_helper...\n" );
-        fflush( stdout );
+        fprintf( out_logfile, "V-1: Entering create_remove_items_helper...\n" );
+        fflush( out_logfile );
     }
 
     for (uint64_t i = progress->items_start ; i < progress->items_per_dir ; ++i) {
@@ -513,8 +513,8 @@ void collective_helper(const int dirs, const int create, const char* path, uint6
     char curr_item[MAX_LEN];
 
     if (( rank == 0 ) && ( verbose >= 1 )) {
-        fprintf( stdout, "V-1: Entering collective_helper...\n" );
-        fflush( stdout );
+        fprintf( out_logfile, "V-1: Entering collective_helper...\n" );
+        fflush( out_logfile );
     }
     for (uint64_t i = 0 ; i < items_per_dir ; ++i) {
         if (dirs) {
@@ -524,8 +524,8 @@ void collective_helper(const int dirs, const int create, const char* path, uint6
 
         sprintf(curr_item, "%s/file.%s"LLU"", path, create ? mk_name : rm_name, itemNum+i);
         if (rank == 0 && verbose >= 3) {
-            printf("V-3: create file: %s\n", curr_item);
-            fflush(stdout);
+            fprintf(out_logfile, "V-3: create file: %s\n", curr_item);
+            fflush(out_logfile);
         }
 
         if (create) {
@@ -562,8 +562,8 @@ void create_remove_items(int currDepth, const int dirs, const int create, const 
 
 
     if (( rank == 0 ) && ( verbose >= 1 )) {
-        fprintf( stdout, "V-1: Entering create_remove_items, currDepth = %d...\n", currDepth );
-        fflush( stdout );
+        fprintf( out_logfile, "V-1: Entering create_remove_items, currDepth = %d...\n", currDepth );
+        fflush( out_logfile );
     }
 
 
@@ -571,8 +571,8 @@ void create_remove_items(int currDepth, const int dirs, const int create, const 
     strcpy(temp_path, path);
 
     if (rank == 0 && verbose >= 3) {
-        printf( "V-3: create_remove_items (start): temp_path is \"%s\"\n", temp_path );
-        fflush(stdout);
+        fprintf(out_logfile,  "V-3: create_remove_items (start): temp_path is \"%s\"\n", temp_path );
+        fflush(out_logfile);
     }
 
     if (currDepth == 0) {
@@ -600,8 +600,8 @@ void create_remove_items(int currDepth, const int dirs, const int create, const 
             strcat(temp_path, dir);
 
             if (rank == 0 && verbose >= 3) {
-                printf( "V-3: create_remove_items (for loop): temp_path is \"%s\"\n", temp_path );
-                fflush(stdout);
+                fprintf(out_logfile,  "V-3: create_remove_items (for loop): temp_path is \"%s\"\n", temp_path );
+                fflush(out_logfile);
             }
 
             /* create the items in this branch */
@@ -640,8 +640,8 @@ void mdtest_stat(const int random, const int dirs, const char *path, rank_progre
     uint64_t stop;
 
     if (( rank == 0 ) && ( verbose >= 1 )) {
-        fprintf( stdout, "V-1: Entering mdtest_stat...\n" );
-        fflush( stdout );
+        fprintf( out_logfile, "V-1: Entering mdtest_stat...\n" );
+        fflush( out_logfile );
     }
 
     /* determine the number of items to stat*/
@@ -679,14 +679,14 @@ void mdtest_stat(const int random, const int dirs, const char *path, rank_progre
         /* create name of file/dir to stat */
         if (dirs) {
             if (rank == 0 && verbose >= 3 && (i%ITEM_COUNT == 0) && (i != 0)) {
-                printf("V-3: stat dir: "LLU"\n", i);
-                fflush(stdout);
+                fprintf(out_logfile, "V-3: stat dir: "LLU"\n", i);
+                fflush(out_logfile);
             }
             sprintf(item, "dir.%s"LLU"", stat_name, item_num);
         } else {
             if (rank == 0 && verbose >= 3 && (i%ITEM_COUNT == 0) && (i != 0)) {
-                printf("V-3: stat file: "LLU"\n", i);
-                fflush(stdout);
+                fprintf(out_logfile, "V-3: stat file: "LLU"\n", i);
+                fflush(out_logfile);
             }
             sprintf(item, "file.%s"LLU"", stat_name, item_num);
         }
@@ -715,24 +715,24 @@ void mdtest_stat(const int random, const int dirs, const char *path, rank_progre
         /* below temp used to be hiername */
         if (rank == 0 && verbose >= 3) {
             if (dirs) {
-                printf("V-3: mdtest_stat dir : %s\n", item);
+                fprintf(out_logfile, "V-3: mdtest_stat dir : %s\n", item);
             } else {
-                printf("V-3: mdtest_stat file: %s\n", item);
+                fprintf(out_logfile, "V-3: mdtest_stat file: %s\n", item);
             }
-            fflush(stdout);
+            fflush(out_logfile);
         }
 
         if (-1 == backend->stat (item, &buf, &param)) {
             if (dirs) {
                 if ( verbose >= 3 ) {
-                    fprintf( stdout, "V-3: Stat'ing directory \"%s\"\n", item );
-                    fflush( stdout );
+                    fprintf( out_logfile, "V-3: Stat'ing directory \"%s\"\n", item );
+                    fflush( out_logfile );
                 }
                 FAIL("unable to stat directory");
             } else {
                 if ( verbose >= 3 ) {
-                    fprintf( stdout, "V-3: Stat'ing file \"%s\"\n", item );
-                    fflush( stdout );
+                    fprintf( out_logfile, "V-3: Stat'ing file \"%s\"\n", item );
+                    fflush( out_logfile );
                 }
                 FAIL("unable to stat file");
             }
@@ -748,8 +748,8 @@ void mdtest_read(int random, int dirs, char *path) {
     void *aiori_fh;
 
     if (( rank == 0 ) && ( verbose >= 1 )) {
-        fprintf( stdout, "V-1: Entering mdtest_read...\n" );
-        fflush( stdout );
+        fprintf( out_logfile, "V-1: Entering mdtest_read...\n" );
+        fflush( out_logfile );
     }
 
     /* allocate read buffer */
@@ -797,8 +797,8 @@ void mdtest_read(int random, int dirs, char *path) {
         /* create name of file to read */
         if (!dirs) {
             if (rank == 0 && verbose >= 3 && (i%ITEM_COUNT == 0) && (i != 0)) {
-                printf("V-3: read file: "LLU"\n", i);
-                fflush(stdout);
+                fprintf(out_logfile, "V-3: read file: "LLU"\n", i);
+                fflush(out_logfile);
             }
             sprintf(item, "file.%s"LLU"", read_name, item_num);
         }
@@ -827,9 +827,9 @@ void mdtest_read(int random, int dirs, char *path) {
         /* below temp used to be hiername */
         if (rank == 0 && verbose >= 3) {
             if (!dirs) {
-                printf("V-3: mdtest_read file: %s\n", item);
+                fprintf(out_logfile, "V-3: mdtest_read file: %s\n", item);
             }
-            fflush(stdout);
+            fflush(out_logfile);
         }
 
         /* open file for reading */
@@ -857,8 +857,8 @@ void collective_create_remove(const int create, const int dirs, const int ntasks
     char temp[MAX_LEN];
 
     if (( rank == 0 ) && ( verbose >= 1 )) {
-        fprintf( stdout, "V-1: Entering collective_create_remove...\n" );
-        fflush( stdout );
+        fprintf( out_logfile, "V-1: Entering collective_create_remove...\n" );
+        fflush( out_logfile );
     }
 
     /* rank 0 does all of the creates and removes for all of the ranks */
@@ -902,8 +902,8 @@ void collective_create_remove(const int create, const int dirs, const int ntasks
 
         /* Now that everything is set up as it should be, do the create or remove */
         if (rank == 0 && verbose >= 3) {
-            printf("V-3: collective_create_remove (create_remove_items): temp is \"%s\"\n", temp);
-            fflush( stdout );
+            fprintf(out_logfile, "V-3: collective_create_remove (create_remove_items): temp is \"%s\"\n", temp);
+            fflush( out_logfile );
         }
 
         create_remove_items(0, dirs, create, 1, temp, 0, progress);
@@ -942,8 +942,8 @@ void directory_test(const int iteration, const int ntasks, const char *path, ran
     char temp_path[MAX_LEN];
 
     if (( rank == 0 ) && ( verbose >= 1 )) {
-        fprintf( stdout, "V-1: Entering directory_test...\n" );
-        fflush( stdout );
+        fprintf( out_logfile, "V-1: Entering directory_test...\n" );
+        fflush( out_logfile );
     }
 
     MPI_Barrier(testComm);
@@ -961,8 +961,8 @@ void directory_test(const int iteration, const int ntasks, const char *path, ran
         }
 
         if (verbose >= 3 && rank == 0) {
-            printf( "V-3: directory_test: create path is \"%s\"\n", temp_path );
-            fflush( stdout );
+            fprintf(out_logfile,  "V-3: directory_test: create path is \"%s\"\n", temp_path );
+            fflush( out_logfile );
         }
 
         /* "touch" the files */
@@ -993,8 +993,8 @@ void directory_test(const int iteration, const int ntasks, const char *path, ran
         }
 
         if (verbose >= 3 && rank == 0) {
-            printf( "V-3: directory_test: stat path is \"%s\"\n", temp_path );
-            fflush( stdout );
+            fprintf(out_logfile,  "V-3: directory_test: stat path is \"%s\"\n", temp_path );
+            fflush( out_logfile );
         }
 
         /* stat directories */
@@ -1022,8 +1022,8 @@ void directory_test(const int iteration, const int ntasks, const char *path, ran
         }
 
         if (verbose >= 3 && rank == 0) {
-            printf( "V-3: directory_test: read path is \"%s\"\n", temp_path );
-            fflush( stdout );
+            fprintf(out_logfile,  "V-3: directory_test: read path is \"%s\"\n", temp_path );
+            fflush( out_logfile );
         }
 
         /* read directories */
@@ -1050,8 +1050,8 @@ void directory_test(const int iteration, const int ntasks, const char *path, ran
         }
 
         if (verbose >= 3 && rank == 0) {
-            printf( "V-3: directory_test: remove directories path is \"%s\"\n", temp_path );
-            fflush( stdout );
+            fprintf(out_logfile,  "V-3: directory_test: remove directories path is \"%s\"\n", temp_path );
+            fflush( out_logfile );
         }
 
         double start_timer = GetTimeStamp();
@@ -1078,8 +1078,8 @@ void directory_test(const int iteration, const int ntasks, const char *path, ran
         }
 
         if (verbose >= 3 && rank == 0) {
-            printf( "V-3: directory_test: remove unique directories path is \"%s\"\n", temp_path );
-            fflush( stdout );
+            fprintf(out_logfile,  "V-3: directory_test: remove unique directories path is \"%s\"\n", temp_path );
+            fflush( out_logfile );
         }
     }
 
@@ -1112,17 +1112,17 @@ void directory_test(const int iteration, const int ntasks, const char *path, ran
     }
 
     if (verbose >= 1 && rank == 0) {
-        printf("V-1:   Directory creation: %14.3f sec, %14.3f ops/sec\n",
+        fprintf(out_logfile, "V-1:   Directory creation: %14.3f sec, %14.3f ops/sec\n",
                t[1] - t[0], summary_table[iteration].entry[0]);
-        printf("V-1:   Directory stat    : %14.3f sec, %14.3f ops/sec\n",
+        fprintf(out_logfile, "V-1:   Directory stat    : %14.3f sec, %14.3f ops/sec\n",
                t[2] - t[1], summary_table[iteration].entry[1]);
 /* N/A
-   printf("V-1:   Directory read    : %14.3f sec, %14.3f ops/sec\n",
+   fprintf(out_logfile, "V-1:   Directory read    : %14.3f sec, %14.3f ops/sec\n",
    t[3] - t[2], summary_table[iteration].entry[2]);
 */
-        printf("V-1:   Directory removal : %14.3f sec, %14.3f ops/sec\n",
+        fprintf(out_logfile, "V-1:   Directory removal : %14.3f sec, %14.3f ops/sec\n",
                t[4] - t[3], summary_table[iteration].entry[3]);
-        fflush(stdout);
+        fflush(out_logfile);
     }
 }
 
@@ -1132,8 +1132,8 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
     char temp_path[MAX_LEN];
 
     if (( rank == 0 ) && ( verbose >= 1 )) {
-        fprintf( stdout, "V-1: Entering file_test...\n" );
-        fflush( stdout );
+        fprintf( out_logfile, "V-1: Entering file_test...\n" );
+        fflush( out_logfile );
     }
 
     MPI_Barrier(testComm);
@@ -1151,8 +1151,8 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
         }
 
         if (verbose >= 3 && rank == 0) {
-            printf( "V-3: file_test: create path is \"%s\"\n", temp_path );
-            fflush( stdout );
+            fprintf(out_logfile,  "V-3: file_test: create path is \"%s\"\n", temp_path );
+            fflush( out_logfile );
         }
 
         /* "touch" the files */
@@ -1167,8 +1167,8 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
         create_remove_items(0, 0, 1, 0, temp_path, 0, progress);
         if(stone_wall_timer_seconds){
           if (verbose >= 1 ) {
-            fprintf( stdout, "V-1: rank %d stonewall hit with %lld items\n", rank, progress->items_done );
-            fflush( stdout );
+            fprintf( out_logfile, "V-1: rank %d stonewall hit with %lld items\n", rank, progress->items_done );
+            fflush( out_logfile );
           }
           long long unsigned max_iter = 0;
           MPI_Allreduce(& progress->items_done, & max_iter, 1, MPI_INT, MPI_MAX, testComm);
@@ -1176,8 +1176,8 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
           long long min_accessed = 0;
           MPI_Reduce(& progress->items_done, &min_accessed,1, MPI_LONG_LONG_INT, MPI_MIN, 0, testComm);
           if (rank == 0 ) {
-            fprintf( stdout, "V-1: continue stonewall hit min: %lld max: %lld\n", min_accessed, max_iter);
-            fflush( stdout );
+            fprintf( out_logfile, "V-1: continue stonewall hit min: %lld max: %lld\n", min_accessed, max_iter);
+            fflush( out_logfile );
           }
 
           progress->stone_wall_timer_seconds = 0;
@@ -1206,8 +1206,8 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
         }
 
         if (verbose >= 3 && rank == 0) {
-            printf( "V-3: file_test: stat path is \"%s\"\n", temp_path );
-            fflush( stdout );
+            fprintf(out_logfile,  "V-3: file_test: stat path is \"%s\"\n", temp_path );
+            fflush( out_logfile );
         }
 
         /* stat files */
@@ -1235,8 +1235,8 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
         }
 
         if (verbose >= 3 && rank == 0) {
-            printf( "V-3: file_test: read path is \"%s\"\n", temp_path );
-            fflush( stdout );
+            fprintf(out_logfile,  "V-3: file_test: read path is \"%s\"\n", temp_path );
+            fflush( out_logfile );
         }
 
         /* read files */
@@ -1263,8 +1263,8 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
         }
 
         if (verbose >= 3 && rank == 0) {
-            printf( "V-3: file_test: rm directories path is \"%s\"\n", temp_path );
-            fflush( stdout );
+            fprintf(out_logfile,  "V-3: file_test: rm directories path is \"%s\"\n", temp_path );
+            fflush( out_logfile );
         }
 
         if (collective_creates) {
@@ -1288,8 +1288,8 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
         }
 
         if (verbose >= 3 && rank == 0) {
-            printf( "V-3: file_test: rm unique directories path is \"%s\"\n", temp_path );
-            fflush( stdout );
+            fprintf(out_logfile,  "V-3: file_test: rm unique directories path is \"%s\"\n", temp_path );
+            fflush( out_logfile );
         }
     }
 
@@ -1322,22 +1322,22 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
     }
 
     if (verbose >= 1 && rank == 0) {
-        printf("V-1:   File creation     : %14.3f sec, %14.3f ops/sec\n",
+        fprintf(out_logfile, "V-1:   File creation     : %14.3f sec, %14.3f ops/sec\n",
                t[1] - t[0], summary_table[iteration].entry[4]);
-        printf("V-1:   File stat         : %14.3f sec, %14.3f ops/sec\n",
+        fprintf(out_logfile, "V-1:   File stat         : %14.3f sec, %14.3f ops/sec\n",
                t[2] - t[1], summary_table[iteration].entry[5]);
-        printf("V-1:   File read         : %14.3f sec, %14.3f ops/sec\n",
+        fprintf(out_logfile, "V-1:   File read         : %14.3f sec, %14.3f ops/sec\n",
                t[3] - t[2], summary_table[iteration].entry[6]);
-        printf("V-1:   File removal      : %14.3f sec, %14.3f ops/sec\n",
+        fprintf(out_logfile, "V-1:   File removal      : %14.3f sec, %14.3f ops/sec\n",
                t[4] - t[3], summary_table[iteration].entry[7]);
-        fflush(stdout);
+        fflush(out_logfile);
     }
 }
 
 void print_help (void) {
     int j;
 
-    printf (
+    fprintf(out_logfile,
         "Usage: mdtest [-b branching_factor] [-B] [-c] [-C] [-d testdir] [-D] [-e number_of_bytes_to_read]\n"
         "              [-E] [-f first] [-F] [-h] [-i iterations] [-I items_per_dir] [-l last] [-L]\n"
         "              [-n number_of_items] [-N stride_length] [-p seconds] [-r]\n"
@@ -1394,23 +1394,23 @@ void summarize_results(int iterations) {
 
 
     if (( rank == 0 ) && ( verbose >= 1 )) {
-        fprintf( stdout, "V-1: Entering summarize_results...\n" );
-        fflush( stdout );
+        fprintf( out_logfile, "V-1: Entering summarize_results...\n" );
+        fflush( out_logfile );
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(testComm);
     MPI_Gather(& summary_table->entry[0], tableSize*iterations,
                MPI_DOUBLE, all, tableSize*iterations, MPI_DOUBLE,
-               0, MPI_COMM_WORLD);
+               0, testComm);
 
     if (rank == 0) {
 
-        printf("\nSUMMARY: (of %d iterations)\n", iterations);
-        printf(
+        fprintf(out_logfile, "\nSUMMARY: (of %d iterations)\n", iterations);
+        fprintf(out_logfile,
             "   Operation                      Max            Min           Mean        Std Dev\n");
-        printf(
+        fprintf(out_logfile,
             "   ---------                      ---            ---           ----        -------\n");
-        fflush(stdout);
+        fflush(out_logfile);
 
         /* if files only access, skip entries 0-3 (the dir tests) */
         if (files_only && !dirs_only) {
@@ -1481,12 +1481,12 @@ void summarize_results(int iterations) {
                 default: strcpy(access, "ERR");                 break;
                 }
                 if (i != 2) {
-                    printf("   %s ", access);
-                    printf("%14.3f ", max);
-                    printf("%14.3f ", min);
-                    printf("%14.3f ", mean);
-                    printf("%14.3f\n", sd);
-                    fflush(stdout);
+                    fprintf(out_logfile, "   %s ", access);
+                    fprintf(out_logfile, "%14.3f ", max);
+                    fprintf(out_logfile, "%14.3f ", min);
+                    fprintf(out_logfile, "%14.3f ", mean);
+                    fprintf(out_logfile, "%14.3f\n", sd);
+                    fflush(out_logfile);
                 }
                 sum = var = 0;
 
@@ -1530,12 +1530,12 @@ void summarize_results(int iterations) {
                 default: strcpy(access, "ERR");                 break;
                 }
                 if (i != 2) {
-                    printf("   %s ", access);
-                    printf("%14.3f ", max);
-                    printf("%14.3f ", min);
-                    printf("%14.3f ", mean);
-                    printf("%14.3f\n", sd);
-                    fflush(stdout);
+                    fprintf(out_logfile, "   %s ", access);
+                    fprintf(out_logfile, "%14.3f ", max);
+                    fprintf(out_logfile, "%14.3f ", min);
+                    fprintf(out_logfile, "%14.3f ", mean);
+                    fprintf(out_logfile, "%14.3f\n", sd);
+                    fflush(out_logfile);
                 }
                 sum = var = 0;
 
@@ -1566,12 +1566,12 @@ void summarize_results(int iterations) {
             case 9: strcpy(access, "Tree removal      :"); break;
             default: strcpy(access, "ERR");                 break;
             }
-            printf("   %s ", access);
-            printf("%14.3f ", max);
-            printf("%14.3f ", min);
-            printf("%14.3f ", mean);
-            printf("%14.3f\n", sd);
-            fflush(stdout);
+            fprintf(out_logfile, "   %s ", access);
+            fprintf(out_logfile, "%14.3f ", max);
+            fprintf(out_logfile, "%14.3f ", min);
+            fprintf(out_logfile, "%14.3f ", mean);
+            fprintf(out_logfile, "%14.3f\n", sd);
+            fflush(out_logfile);
             sum = var = 0;
         }
     }
@@ -1582,8 +1582,8 @@ void valid_tests() {
 
 
     if (( rank == 0 ) && ( verbose >= 1 )) {
-        fprintf( stdout, "V-1: Entering valid_tests...\n" );
-        fflush( stdout );
+        fprintf( out_logfile, "V-1: Entering valid_tests...\n" );
+        fflush( out_logfile );
     }
 
     /* if dirs_only and files_only were both left unset, set both now */
@@ -1667,8 +1667,8 @@ void show_file_system_size(char *file_system) {
     int ret;
 
     if (( rank == 0 ) && ( verbose >= 1 )) {
-        fprintf( stdout, "V-1: Entering show_file_system_size...\n" );
-        fflush( stdout );
+        fprintf( out_logfile, "V-1: Entering show_file_system_size...\n" );
+        fflush( out_logfile );
     }
 
     ret = backend->statfs (file_system, &stat_buf, &param);
@@ -1696,13 +1696,13 @@ void show_file_system_size(char *file_system) {
         * 100;
 
     /* show results */
-    fprintf(stdout, "FS: %.1f %s   Used FS: %2.1f%%   ",
+    fprintf(out_logfile, "FS: %.1f %s   Used FS: %2.1f%%   ",
             total_file_system_size_hr, file_system_unit_str,
             used_file_system_percentage);
-    fprintf(stdout, "Inodes: %.1f %s   Used Inodes: %2.1f%%\n",
+    fprintf(out_logfile, "Inodes: %.1f %s   Used Inodes: %2.1f%%\n",
             (double)total_inodes / (double)inode_unit_val,
             inode_unit_str, used_inode_percentage);
-    fflush(stdout);
+    fflush(out_logfile);
 
     return;
 }
@@ -1715,13 +1715,13 @@ void display_freespace(char *testdirpath)
 
 
     if (( rank == 0 ) && ( verbose >= 1 )) {
-        fprintf( stdout, "V-1: Entering display_freespace...\n" );
-        fflush( stdout );
+        fprintf( out_logfile, "V-1: Entering display_freespace...\n" );
+        fflush( out_logfile );
     }
 
     if (verbose >= 3 && rank == 0) {
-        printf( "V-3: testdirpath is \"%s\"\n", testdirpath );
-        fflush( stdout );
+        fprintf(out_logfile,  "V-3: testdirpath is \"%s\"\n", testdirpath );
+        fflush( out_logfile );
     }
 
     strcpy(dirpath, testdirpath);
@@ -1742,15 +1742,15 @@ void display_freespace(char *testdirpath)
     }
 
     if (verbose >= 3 && rank == 0) {
-        printf( "V-3: Before show_file_system_size, dirpath is \"%s\"\n", dirpath );
-        fflush( stdout );
+        fprintf(out_logfile,  "V-3: Before show_file_system_size, dirpath is \"%s\"\n", dirpath );
+        fflush( out_logfile );
     }
 
     show_file_system_size(dirpath);
 
     if (verbose >= 3 && rank == 0) {
-        printf( "V-3: After show_file_system_size, dirpath is \"%s\"\n", dirpath );
-        fflush( stdout );
+        fprintf(out_logfile,  "V-3: After show_file_system_size, dirpath is \"%s\"\n", dirpath );
+        fflush( out_logfile );
     }
 
     return;
@@ -1764,8 +1764,8 @@ void create_remove_directory_tree(int create,
 
 
     if (( rank == 0 ) && ( verbose >= 1 )) {
-        fprintf( stdout, "V-1: Entering create_remove_directory_tree, currDepth = %d...\n", currDepth );
-        fflush( stdout );
+        fprintf( out_logfile, "V-1: Entering create_remove_directory_tree, currDepth = %d...\n", currDepth );
+        fflush( out_logfile );
     }
 
     if (currDepth == 0) {
@@ -1773,8 +1773,8 @@ void create_remove_directory_tree(int create,
 
         if (create) {
             if (rank == 0 && verbose >= 2) {
-                printf("V-2: Making directory \"%s\"\n", dir);
-                fflush(stdout);
+                fprintf(out_logfile, "V-2: Making directory \"%s\"\n", dir);
+                fflush(out_logfile);
             }
 
             if (-1 == backend->mkdir (dir, DIRMODE, &param)) {
@@ -1786,8 +1786,8 @@ void create_remove_directory_tree(int create,
 
         if (!create) {
             if (rank == 0 && verbose >= 2) {
-                printf("V-2: Remove directory \"%s\"\n", dir);
-                fflush(stdout);
+                fprintf(out_logfile, "V-2: Remove directory \"%s\"\n", dir);
+                fflush(out_logfile);
             }
 
             if (-1 == backend->rmdir(dir, &param)) {
@@ -1806,8 +1806,8 @@ void create_remove_directory_tree(int create,
 
             if (create) {
                 if (rank == 0 && verbose >= 2) {
-                    printf("V-2: Making directory \"%s\"\n", temp_path);
-                    fflush(stdout);
+                    fprintf(out_logfile, "V-2: Making directory \"%s\"\n", temp_path);
+                    fflush(out_logfile);
                 }
 
                 if (-1 == backend->mkdir(temp_path, DIRMODE, &param)) {
@@ -1821,8 +1821,8 @@ void create_remove_directory_tree(int create,
 
             if (!create) {
                 if (rank == 0 && verbose >= 2) {
-                    printf("V-2: Remove directory \"%s\"\n", temp_path);
-                    fflush(stdout);
+                    fprintf(out_logfile, "V-2: Remove directory \"%s\"\n", temp_path);
+                    fflush(out_logfile);
                 }
 
                 if (-1 == backend->rmdir(temp_path, &param)) {
@@ -1842,8 +1842,8 @@ static void mdtest_iteration(int i, int j, MPI_Group testgroup, table_t * summar
   int k, c;
 
   if (rank == 0 && verbose >= 1) {
-      printf("V-1: main: * iteration %d *\n", j+1);
-      fflush(stdout);
+      fprintf(out_logfile, "V-1: main: * iteration %d *\n", j+1);
+      fflush(out_logfile);
   }
 
   int pos = sprintf(testdir, "%s", testdirpath);
@@ -1854,8 +1854,8 @@ static void mdtest_iteration(int i, int j, MPI_Group testgroup, table_t * summar
   pos += sprintf(& testdir[pos], ".%d", j);
 
   if (verbose >= 2 && rank == 0) {
-      printf( "V-2: main (for j loop): making testdir, \"%s\"\n", testdir );
-      fflush( stdout );
+      fprintf(out_logfile,  "V-2: main (for j loop): making testdir, \"%s\"\n", testdir );
+      fflush( out_logfile );
   }
   if ((rank < path_count) && backend->access(testdir, F_OK, &param) != 0) {
       if (backend->mkdir(testdir, DIRMODE, &param) != 0) {
@@ -1864,7 +1864,7 @@ static void mdtest_iteration(int i, int j, MPI_Group testgroup, table_t * summar
   }
 
   /* create hierarchical directory structure */
-  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(testComm);
   if (create_only) {
       startCreate = MPI_Wtime();
       if (unique_dir_per_task) {
@@ -1877,10 +1877,10 @@ static void mdtest_iteration(int i, int j, MPI_Group testgroup, table_t * summar
                   sprintf(base_tree_name, "mdtest_tree.%d", k);
 
                   if (verbose >= 3 && rank == 0) {
-                      printf(
+                      fprintf(out_logfile,
                           "V-3: main (create hierarchical directory loop-collective): Calling create_remove_directory_tree with \"%s\"\n",
                           testdir );
-                      fflush( stdout );
+                      fflush( out_logfile );
                   }
 
                   /*
@@ -1895,10 +1895,10 @@ static void mdtest_iteration(int i, int j, MPI_Group testgroup, table_t * summar
               }
           } else if (!collective_creates) {
               if (verbose >= 3 && rank == 0) {
-                  printf(
+                  fprintf(out_logfile,
                       "V-3: main (create hierarchical directory loop-!collective_creates): Calling create_remove_directory_tree with \"%s\"\n",
                       testdir );
-                  fflush( stdout );
+                  fflush( out_logfile );
               }
 
               /*
@@ -1910,10 +1910,10 @@ static void mdtest_iteration(int i, int j, MPI_Group testgroup, table_t * summar
       } else {
           if (rank == 0) {
               if (verbose >= 3 && rank == 0) {
-                  printf(
+                  fprintf(out_logfile,
                       "V-3: main (create hierarchical directory loop-!unque_dir_per_task): Calling create_remove_directory_tree with \"%s\"\n",
                       testdir );
-                  fflush( stdout );
+                  fflush( out_logfile );
               }
 
               /*
@@ -1923,14 +1923,14 @@ static void mdtest_iteration(int i, int j, MPI_Group testgroup, table_t * summar
               create_remove_directory_tree(1, 0 , testdir, 0, progress);
           }
       }
-      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Barrier(testComm);
       endCreate = MPI_Wtime();
       summary_table->entry[8] =
           num_dirs_in_tree / (endCreate - startCreate);
       if (verbose >= 1 && rank == 0) {
-          printf("V-1: main:   Tree creation     : %14.3f sec, %14.3f ops/sec\n",
+          fprintf(out_logfile, "V-1: main:   Tree creation     : %14.3f sec, %14.3f ops/sec\n",
                  (endCreate - startCreate), summary_table->entry[8]);
-          fflush(stdout);
+          fflush(out_logfile);
       }
   } else {
       summary_table->entry[8] = 0;
@@ -1944,8 +1944,8 @@ static void mdtest_iteration(int i, int j, MPI_Group testgroup, table_t * summar
 
   if (!unique_dir_per_task) {
       if (verbose >= 3 && rank == 0) {
-          printf( "V-3: main: Using unique_mk_dir, \"%s\"\n", unique_mk_dir );
-          fflush( stdout );
+          fprintf(out_logfile,  "V-3: main: Using unique_mk_dir, \"%s\"\n", unique_mk_dir );
+          fflush( out_logfile );
       }
   }
 
@@ -1972,8 +1972,8 @@ static void mdtest_iteration(int i, int j, MPI_Group testgroup, table_t * summar
       strcpy(top_dir, unique_mk_dir);
 
       if (verbose >= 3 && rank == 0) {
-          printf( "V-3: main: Copied unique_mk_dir, \"%s\", to topdir\n", unique_mk_dir );
-          fflush( stdout );
+          fprintf(out_logfile,  "V-3: main: Copied unique_mk_dir, \"%s\", to topdir\n", unique_mk_dir );
+          fflush( out_logfile );
       }
 
       if (dirs_only && !shared_file) {
@@ -1993,12 +1993,12 @@ static void mdtest_iteration(int i, int j, MPI_Group testgroup, table_t * summar
   /* remove directory structure */
   if (!unique_dir_per_task) {
       if (verbose >= 3 && rank == 0) {
-          printf( "V-3: main: Using testdir, \"%s\"\n", testdir );
-          fflush( stdout );
+          fprintf(out_logfile,  "V-3: main: Using testdir, \"%s\"\n", testdir );
+          fflush( out_logfile );
       }
   }
 
-  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(testComm);
   if(CHECK_STONE_WALL(progress)){
     return;
   }
@@ -2014,10 +2014,10 @@ static void mdtest_iteration(int i, int j, MPI_Group testgroup, table_t * summar
                   sprintf(base_tree_name, "mdtest_tree.%d", k);
 
                   if (verbose >= 3 && rank == 0) {
-                      printf(
+                      fprintf(out_logfile,
                           "V-3: main (remove hierarchical directory loop-collective): Calling create_remove_directory_tree with \"%s\"\n",
                           testdir );
-                      fflush( stdout );
+                      fflush( out_logfile );
                   }
 
                   /*
@@ -2032,10 +2032,10 @@ static void mdtest_iteration(int i, int j, MPI_Group testgroup, table_t * summar
               }
           } else if (!collective_creates) {
               if (verbose >= 3 && rank == 0) {
-                  printf(
+                  fprintf(out_logfile,
                       "V-3: main (remove hierarchical directory loop-!collective): Calling create_remove_directory_tree with \"%s\"\n",
                       testdir );
-                  fflush( stdout );
+                  fflush( out_logfile );
               }
 
               /*
@@ -2047,10 +2047,10 @@ static void mdtest_iteration(int i, int j, MPI_Group testgroup, table_t * summar
       } else {
           if (rank == 0) {
               if (verbose >= 3 && rank == 0) {
-                  printf(
+                  fprintf(out_logfile,
                       "V-3: main (remove hierarchical directory loop-!unique_dir_per_task): Calling create_remove_directory_tree with \"%s\"\n",
                       testdir );
-                  fflush( stdout );
+                  fflush( out_logfile );
               }
 
               /*
@@ -2061,18 +2061,18 @@ static void mdtest_iteration(int i, int j, MPI_Group testgroup, table_t * summar
           }
       }
 
-      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Barrier(testComm);
       endCreate = MPI_Wtime();
       summary_table->entry[9] = num_dirs_in_tree / (endCreate - startCreate);
       if (verbose >= 1 && rank == 0) {
-          printf("V-1: main   Tree removal      : %14.3f sec, %14.3f ops/sec\n",
+          fprintf(out_logfile, "V-1: main   Tree removal      : %14.3f sec, %14.3f ops/sec\n",
                  (endCreate - startCreate), summary_table->entry[9]);
-          fflush(stdout);
+          fflush(out_logfile);
       }
 
       if (( rank == 0 ) && ( verbose >=2 )) {
-          fprintf( stdout, "V-2: main (at end of for j loop): Removing testdir of \"%s\"\n", testdir );
-          fflush( stdout );
+          fprintf( out_logfile, "V-2: main (at end of for j loop): Removing testdir of \"%s\"\n", testdir );
+          fflush( out_logfile );
       }
 
       if ((rank < path_count) && backend->access(testdir, F_OK, &param) == 0) {
@@ -2115,7 +2115,10 @@ void mdtest_init_args(){
    nstride = 0;
 }
 
-table_t * mdtest_run(int argc, char **argv) {
+table_t * mdtest_run(int argc, char **argv, MPI_Comm world_com, FILE * world_out) {
+    testComm = world_com;
+    out_logfile = world_out;
+
     mdtest_init_args();
     int i, j, k;
     int nodeCount;
@@ -2138,8 +2141,8 @@ table_t * mdtest_run(int argc, char **argv) {
         }
     }
 
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(testComm, &rank);
+    MPI_Comm_size(testComm, &size);
 
     pid = getpid();
     uid = getuid();
@@ -2147,19 +2150,19 @@ table_t * mdtest_run(int argc, char **argv) {
     nodeCount = size / count_tasks_per_node();
 
     if (rank == 0) {
-        printf("-- started at %s --\n\n", print_timestamp());
-        printf("mdtest-%s was launched with %d total task(s) on %d node(s)\n",
+        fprintf(out_logfile, "-- started at %s --\n\n", print_timestamp());
+        fprintf(out_logfile, "mdtest-%s was launched with %d total task(s) on %d node(s)\n",
                RELEASE_VERS, size, nodeCount);
-        fflush(stdout);
+        fflush(out_logfile);
     }
 
     if (rank == 0) {
-        fprintf(stdout, "Command line used: %s", argv[0]);
+        fprintf(out_logfile, "Command line used: %s", argv[0]);
         for (i = 1; i < argc; i++) {
-            fprintf(stdout, " \"%s\"", argv[i]);
+            fprintf(out_logfile, " \"%s\"", argv[i]);
         }
-        fprintf(stdout, "\n");
-        fflush(stdout);
+        fprintf(out_logfile, "\n");
+        fflush(out_logfile);
     }
 
     /* Parse command line options */
@@ -2220,8 +2223,8 @@ table_t * mdtest_run(int argc, char **argv) {
         case 'R':
             if (optarg == NULL) {
                 random_seed = time(NULL);
-                MPI_Barrier(MPI_COMM_WORLD);
-                MPI_Bcast(&random_seed, 1, MPI_INT, 0, MPI_COMM_WORLD);
+                MPI_Barrier(testComm);
+                MPI_Bcast(&random_seed, 1, MPI_INT, 0, testComm);
                 random_seed += rank;
             } else {
                 random_seed = atoi(optarg)+rank;
@@ -2253,53 +2256,53 @@ table_t * mdtest_run(int argc, char **argv) {
     }
 
     if(stone_wall_timer_seconds > 0 && branch_factor > 1 || ! barriers){
-      fprintf(stdout, "Error, stone wall timer does only work with a branch factor <= 1 and with barriers\n");
-      MPI_Abort(MPI_COMM_WORLD, 1);
+      fprintf(out_logfile, "Error, stone wall timer does only work with a branch factor <= 1 and with barriers\n");
+      MPI_Abort(testComm, 1);
     }
 
     if (!create_only && !stat_only && !read_only && !remove_only) {
         create_only = stat_only = read_only = remove_only = 1;
         if (( rank == 0 ) && ( verbose >= 1 )) {
-            fprintf( stdout, "V-1: main: Setting create/stat/read/remove_only to True\n" );
-            fflush( stdout );
+            fprintf( out_logfile, "V-1: main: Setting create/stat/read/remove_only to True\n" );
+            fflush( out_logfile );
         }
     }
 
     valid_tests();
 
     if (( rank == 0 ) && ( verbose >= 1 )) {
-        fprintf (stdout, "api                     : %s\n", backend_name);
-        fprintf( stdout, "barriers                : %s\n", ( barriers ? "True" : "False" ));
-        fprintf( stdout, "collective_creates      : %s\n", ( collective_creates ? "True" : "False" ));
-        fprintf( stdout, "create_only             : %s\n", ( create_only ? "True" : "False" ));
-        fprintf( stdout, "dirpath(s):\n" );
+        fprintf (out_logfile, "api                     : %s\n", backend_name);
+        fprintf( out_logfile, "barriers                : %s\n", ( barriers ? "True" : "False" ));
+        fprintf( out_logfile, "collective_creates      : %s\n", ( collective_creates ? "True" : "False" ));
+        fprintf( out_logfile, "create_only             : %s\n", ( create_only ? "True" : "False" ));
+        fprintf( out_logfile, "dirpath(s):\n" );
         for ( i = 0; i < path_count; i++ ) {
-            fprintf( stdout, "\t%s\n", filenames[i] );
+            fprintf( out_logfile, "\t%s\n", filenames[i] );
         }
-        fprintf( stdout, "dirs_only               : %s\n", ( dirs_only ? "True" : "False" ));
-        fprintf( stdout, "read_bytes              : "LLU"\n", read_bytes );
-        fprintf( stdout, "read_only               : %s\n", ( read_only ? "True" : "False" ));
-        fprintf( stdout, "first                   : %d\n", first );
-        fprintf( stdout, "files_only              : %s\n", ( files_only ? "True" : "False" ));
-        fprintf( stdout, "iterations              : %d\n", iterations );
-        fprintf( stdout, "items_per_dir           : "LLU"\n", items_per_dir );
-        fprintf( stdout, "last                    : %d\n", last );
-        fprintf( stdout, "leaf_only               : %s\n", ( leaf_only ? "True" : "False" ));
-        fprintf( stdout, "items                   : "LLU"\n", items );
-        fprintf( stdout, "nstride                 : %d\n", nstride );
-        fprintf( stdout, "pre_delay               : %d\n", pre_delay );
-        fprintf( stdout, "remove_only             : %s\n", ( leaf_only ? "True" : "False" ));
-        fprintf( stdout, "random_seed             : %d\n", random_seed );
-        fprintf( stdout, "stride                  : %d\n", stride );
-        fprintf( stdout, "shared_file             : %s\n", ( shared_file ? "True" : "False" ));
-        fprintf( stdout, "time_unique_dir_overhead: %s\n", ( time_unique_dir_overhead ? "True" : "False" ));
-        fprintf( stdout, "stone_wall_timer_seconds: %d\n", stone_wall_timer_seconds);
-        fprintf( stdout, "stat_only               : %s\n", ( stat_only ? "True" : "False" ));
-        fprintf( stdout, "unique_dir_per_task     : %s\n", ( unique_dir_per_task ? "True" : "False" ));
-        fprintf( stdout, "write_bytes             : "LLU"\n", write_bytes );
-        fprintf( stdout, "sync_file               : %s\n", ( sync_file ? "True" : "False" ));
-        fprintf( stdout, "depth                   : %d\n", depth );
-        fflush( stdout );
+        fprintf( out_logfile, "dirs_only               : %s\n", ( dirs_only ? "True" : "False" ));
+        fprintf( out_logfile, "read_bytes              : "LLU"\n", read_bytes );
+        fprintf( out_logfile, "read_only               : %s\n", ( read_only ? "True" : "False" ));
+        fprintf( out_logfile, "first                   : %d\n", first );
+        fprintf( out_logfile, "files_only              : %s\n", ( files_only ? "True" : "False" ));
+        fprintf( out_logfile, "iterations              : %d\n", iterations );
+        fprintf( out_logfile, "items_per_dir           : "LLU"\n", items_per_dir );
+        fprintf( out_logfile, "last                    : %d\n", last );
+        fprintf( out_logfile, "leaf_only               : %s\n", ( leaf_only ? "True" : "False" ));
+        fprintf( out_logfile, "items                   : "LLU"\n", items );
+        fprintf( out_logfile, "nstride                 : %d\n", nstride );
+        fprintf( out_logfile, "pre_delay               : %d\n", pre_delay );
+        fprintf( out_logfile, "remove_only             : %s\n", ( leaf_only ? "True" : "False" ));
+        fprintf( out_logfile, "random_seed             : %d\n", random_seed );
+        fprintf( out_logfile, "stride                  : %d\n", stride );
+        fprintf( out_logfile, "shared_file             : %s\n", ( shared_file ? "True" : "False" ));
+        fprintf( out_logfile, "time_unique_dir_overhead: %s\n", ( time_unique_dir_overhead ? "True" : "False" ));
+        fprintf( out_logfile, "stone_wall_timer_seconds: %d\n", stone_wall_timer_seconds);
+        fprintf( out_logfile, "stat_only               : %s\n", ( stat_only ? "True" : "False" ));
+        fprintf( out_logfile, "unique_dir_per_task     : %s\n", ( unique_dir_per_task ? "True" : "False" ));
+        fprintf( out_logfile, "write_bytes             : "LLU"\n", write_bytes );
+        fprintf( out_logfile, "sync_file               : %s\n", ( sync_file ? "True" : "False" ));
+        fprintf( out_logfile, "depth                   : %d\n", depth );
+        fflush( out_logfile );
     }
 
     /* setup total number of items and number of items per dir */
@@ -2408,26 +2411,26 @@ table_t * mdtest_run(int argc, char **argv) {
 
     /* display disk usage */
     if (verbose >= 3 && rank == 0) {
-        printf( "V-3: main (before display_freespace): testdirpath is \"%s\"\n", testdirpath );
-        fflush( stdout );
+        fprintf(out_logfile,  "V-3: main (before display_freespace): testdirpath is \"%s\"\n", testdirpath );
+        fflush( out_logfile );
     }
 
     if (rank == 0) display_freespace(testdirpath);
 
     if (verbose >= 3 && rank == 0) {
-        printf( "V-3: main (after display_freespace): testdirpath is \"%s\"\n", testdirpath );
-        fflush( stdout );
+        fprintf(out_logfile,  "V-3: main (after display_freespace): testdirpath is \"%s\"\n", testdirpath );
+        fflush( out_logfile );
     }
 
     if (rank == 0) {
         if (random_seed > 0) {
-            printf("random seed: %d\n", random_seed);
+            fprintf(out_logfile, "random seed: %d\n", random_seed);
         }
     }
 
     if (gethostname(hostname, MAX_LEN) == -1) {
         perror("gethostname");
-        MPI_Abort(MPI_COMM_WORLD, 2);
+        MPI_Abort(testComm, 2);
     }
 
     if (last == 0) {
@@ -2454,7 +2457,7 @@ table_t * mdtest_run(int argc, char **argv) {
     strcpy(read_name, "mdtest.shared.");
     strcpy(rm_name, "mdtest.shared.");
 
-    MPI_Comm_group(MPI_COMM_WORLD, &worldgroup);
+    MPI_Comm_group(testComm, &worldgroup);
 
     // keep track of the current status for stonewalling
     rank_progress_t progress;
@@ -2467,25 +2470,25 @@ table_t * mdtest_run(int argc, char **argv) {
     for (i = first; i <= last && i <= size; i += stride) {
         range.last = i - 1;
         MPI_Group_range_incl(worldgroup, 1, (void *)&range, &testgroup);
-        MPI_Comm_create(MPI_COMM_WORLD, testgroup, &testComm);
+        MPI_Comm_create(testComm, testgroup, &testComm);
         if (rank == 0) {
             if (files_only && dirs_only) {
-                printf("\n%d tasks, "LLU" files/directories\n", i, i * items);
+                fprintf(out_logfile, "\n%d tasks, "LLU" files/directories\n", i, i * items);
             } else if (files_only) {
                 if (!shared_file) {
-                    printf("\n%d tasks, "LLU" files\n", i, i * items);
+                    fprintf(out_logfile, "\n%d tasks, "LLU" files\n", i, i * items);
                 }
                 else {
-                    printf("\n%d tasks, 1 file\n", i);
+                    fprintf(out_logfile, "\n%d tasks, 1 file\n", i);
                 }
             } else if (dirs_only) {
-                printf("\n%d tasks, "LLU" directories\n", i, i * items);
+                fprintf(out_logfile, "\n%d tasks, "LLU" directories\n", i, i * items);
             }
         }
         if (rank == 0 && verbose >= 1) {
-            printf("\n");
-            printf("   Operation               Duration              Rate\n");
-            printf("   ---------               --------              ----\n");
+            fprintf(out_logfile, "\n");
+            fprintf(out_logfile, "   Operation               Duration              Rate\n");
+            fprintf(out_logfile, "   ---------               --------              ----\n");
         }
 
         for (j = 0; j < iterations; j++) {
@@ -2508,10 +2511,10 @@ table_t * mdtest_run(int argc, char **argv) {
 
     if (rank == 0) {
         if(CHECK_STONE_WALL(& progress)){
-          printf("\n-- hit stonewall\n");
+          fprintf(out_logfile, "\n-- hit stonewall\n");
         }
-        printf("\n-- finished at %s --\n", print_timestamp());
-        fflush(stdout);
+        fprintf(out_logfile, "\n-- finished at %s --\n", print_timestamp());
+        fflush(out_logfile);
     }
 
     if (random_seed > 0) {
@@ -2524,7 +2527,7 @@ int main(int argc, char **argv) {
     MPI_Init(&argc, &argv);
     init_clock();
 
-    mdtest_run(argc, argv);
+    mdtest_run(argc, argv, MPI_COMM_WORLD, stdout);
 
     MPI_Finalize();
     return 0;
