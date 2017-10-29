@@ -1185,6 +1185,7 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
           create_remove_items(0, 0, 1, 0, temp_path, 0, progress);
           progress->stone_wall_timer_seconds = stone_wall_timer_seconds;
           items = max_iter;
+          progress->items_done = max_iter;
         }
     }
 
@@ -2500,7 +2501,7 @@ table_t * mdtest_run(int argc, char **argv, MPI_Comm world_com, FILE * world_out
               break;
             }
         }
-        summary_table->items = progress.items_done;
+        summary_table->items = progress->items_done;
         summarize_results(iterations);
         if (i == 1 && stride > 1) {
             i = 0;
