@@ -35,20 +35,12 @@
 #include "utilities.h"
 #include "parse_options.h"
 
-
-/* globals used by other files, also defined "extern" in ior.h */
-int      numTasksWorld = 0;
-int      rank = 0;
-int      rankOffset = 0;
-int      tasksPerNode = 0;           /* tasks per node */
-int      verbose = VERBOSE_0;        /* verbose output */
-MPI_Comm testComm;
-
 /* file scope globals */
 extern char **environ;
-int totalErrorCount = 0;
 
-const ior_aiori_t *backend;
+static const ior_aiori_t *backend;
+static int totalErrorCount = 0;
+
 
 static void DestroyTests(IOR_test_t *tests_head);
 static void DisplayUsage(char **);

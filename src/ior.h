@@ -40,16 +40,6 @@
 
 
 #include "iordef.h"
-
-extern int numTasksWorld;
-extern int rank;
-extern int rankOffset;
-extern int tasksPerNode;
-extern int verbose;
-extern int totalErrorCount;
-extern MPI_Comm testComm;
-
-
 /******************** DATA Packet Type ***************************************/
 /* Holds the types of data packets: generic, offset, timestamp, incompressible */
 

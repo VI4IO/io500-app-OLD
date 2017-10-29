@@ -18,6 +18,14 @@
 #include <mpi.h>
 #include "ior.h"
 
+extern int numTasksWorld;
+extern int rank;
+extern int rankOffset;
+extern int tasksPerNode;
+extern int verbose;
+extern MPI_Comm testComm;
+extern FILE * out;
+
 void set_o_direct_flag(int *fd);
 
 char *CurrentTimeString(void);

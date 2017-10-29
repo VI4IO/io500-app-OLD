@@ -118,15 +118,6 @@ static int leaf_only;
 static unsigned branch_factor;
 static int depth;
 
-
-#ifndef MDTEST_LIBRARY
-/* needed for MPI/IO backend to link correctly */
-int rank;
-int rankOffset = 0;
-int verbose;
-MPI_Comm testComm;
-#endif
-
 /*
  * This is likely a small value, but it's sometimes computed by
  * branch_factor^(depth+1), so we'll make it a larger variable,

@@ -47,9 +47,15 @@
 
 extern int errno;
 extern int numTasks;
-extern int rank;
-extern int rankOffset;
-extern int verbose;
+
+/* globals used by other files, also defined "extern" in ior.h */
+int      numTasksWorld = 0;
+int      rank = 0;
+int      rankOffset = 0;
+int      tasksPerNode = 0;           /* tasks per node */
+int      verbose = VERBOSE_0;        /* verbose output */
+MPI_Comm testComm;
+FILE * out;
 
 /***************************** F U N C T I O N S ******************************/
 
