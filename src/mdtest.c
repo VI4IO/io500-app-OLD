@@ -1173,7 +1173,7 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
           MPI_Allreduce(& progress->items_done, & max_iter, 1, MPI_INT, MPI_MAX, testComm);
           // continue to the maximum...
           long long min_accessed = 0;
-          MPI_Reduce(& progress->items_done, &min_accessed,1, MPI_LONG_LONG_INT, MPI_MIN, 0, testComm);
+          MPI_Reduce(& progress->items_done, &min_accessed, 1, MPI_LONG_LONG_INT, MPI_MIN, 0, testComm);
           if (rank == 0 ) {
             fprintf( out_logfile, "V-1: continue stonewall hit min: %lld max: %lld\n", min_accessed, max_iter);
             fflush( out_logfile );
@@ -2497,11 +2497,10 @@ table_t * mdtest_run(int argc, char **argv, MPI_Comm world_com, FILE * world_out
             mdtest_iteration(i, j, testgroup, & summary_table[j], & progress);
             if(CHECK_STONE_WALL(& progress)){
               iterations = j + 1;
-              summary_table->items = items;
               break;
             }
         }
-
+        summary_table->items = progress->items_done;
         summarize_results(iterations);
         if (i == 1 && stride > 1) {
             i = 0;
