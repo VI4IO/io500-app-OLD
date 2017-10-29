@@ -139,12 +139,12 @@ int main(int argc, char **argv)
         IOR_test_t *tptr;
 
         /*
-         * check -h option from commandline without starting MPI;
+         * check --help option from commandline without starting MPI;
          * if the help option is requested in a script file (showHelp=TRUE),
          * the help output will be displayed in the MPI job
          */
         for (i = 1; i < argc; i++) {
-                if (strcmp(argv[i], "-h") == 0) {
+                if (strcmp(argv[i], "--help") == 0) {
                         DisplayUsage(argv);
                         return (0);
                 }
@@ -180,8 +180,12 @@ int main(int argc, char **argv)
         tests_head->params.testComm = MPI_COMM_WORLD;
 
         /* check for commandline 'help' request */
-        if (rank == 0 && tests_head->params.showHelp == TRUE) {
-                DisplayUsage(argv);
+        if (tests_head->params.showHelp == TRUE) {
+                if( rank == 0 ){
+                  DisplayUsage(argv);
+                }
+                MPI_Finalize();
+                exit(0);
         }
 
         PrintHeader(argc, argv);
