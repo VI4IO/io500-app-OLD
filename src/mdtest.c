@@ -2500,7 +2500,7 @@ table_t * mdtest_run(int argc, char **argv, MPI_Comm world_com, FILE * world_out
               break;
             }
         }
-        summary_table->items = progress->items_done;
+        summary_table->items = progress.items_done;
         summarize_results(iterations);
         if (i == 1 && stride > 1) {
             i = 0;
