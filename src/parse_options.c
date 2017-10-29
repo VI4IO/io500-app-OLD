@@ -145,7 +145,7 @@ static void CheckRunSettings(IOR_test_t *tests)
 
                 /* If numTasks set to 0, use all tasks */
                 if (params->numTasks == 0) {
-                        MPI_CHECK(MPI_Comm_size(MPI_COMM_WORLD,
+                        MPI_CHECK(MPI_Comm_size(mpi_comm_world,
                                                 &params->numTasks),
                                   "MPI_Comm_size() error");
                         RecalculateExpectedFileSize(params);

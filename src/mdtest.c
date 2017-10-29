@@ -213,8 +213,7 @@ int count_tasks_per_node(void) {
     MPI_Comm shared_comm;
     int rc, count;
 
-    MPI_Comm_split_type (testComm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL,
-                         &shared_comm);
+    MPI_Comm_split_type (testComm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &shared_comm);
 
     MPI_Comm_size (shared_comm, &count);
 
@@ -2118,6 +2117,9 @@ void mdtest_init_args(){
 table_t * mdtest_run(int argc, char **argv, MPI_Comm world_com, FILE * world_out) {
     testComm = world_com;
     out_logfile = world_out;
+    mpi_comm_world = world_com;
+
+    init_clock();
 
     mdtest_init_args();
     int i, j, k;
@@ -2525,7 +2527,6 @@ table_t * mdtest_run(int argc, char **argv, MPI_Comm world_com, FILE * world_out
 
 int main(int argc, char **argv) {
     MPI_Init(&argc, &argv);
-    init_clock();
 
     mdtest_run(argc, argv, MPI_COMM_WORLD, stdout);
 

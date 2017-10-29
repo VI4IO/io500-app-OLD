@@ -55,6 +55,7 @@ int      rankOffset = 0;
 int      tasksPerNode = 0;           /* tasks per node */
 int      verbose = VERBOSE_0;        /* verbose output */
 MPI_Comm testComm;
+MPI_Comm mpi_comm_world;
 FILE * out_logfile;
 
 /***************************** F U N C T I O N S ******************************/
@@ -516,18 +517,18 @@ static double TimeDeviation(void)
         double max = 0;
         double roottimestamp;
 
-        MPI_CHECK(MPI_Barrier(MPI_COMM_WORLD), "barrier error");
+        MPI_CHECK(MPI_Barrier(mpi_comm_world), "barrier error");
         timestamp = GetTimeStamp();
         MPI_CHECK(MPI_Reduce(&timestamp, &min, 1, MPI_DOUBLE,
-                             MPI_MIN, 0, MPI_COMM_WORLD),
+                             MPI_MIN, 0, mpi_comm_world),
                   "cannot reduce tasks' times");
         MPI_CHECK(MPI_Reduce(&timestamp, &max, 1, MPI_DOUBLE,
-                             MPI_MAX, 0, MPI_COMM_WORLD),
+                             MPI_MAX, 0, mpi_comm_world),
                   "cannot reduce tasks' times");
 
         /* delta between individual nodes' time and root node's time */
         roottimestamp = timestamp;
-        MPI_CHECK(MPI_Bcast(&roottimestamp, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD),
+        MPI_CHECK(MPI_Bcast(&roottimestamp, 1, MPI_DOUBLE, 0, mpi_comm_world),
                   "cannot broadcast root's time");
         wall_clock_delta = timestamp - roottimestamp;
 

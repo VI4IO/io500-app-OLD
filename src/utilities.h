@@ -24,6 +24,7 @@ extern int rankOffset;
 extern int tasksPerNode;
 extern int verbose;
 extern MPI_Comm testComm;
+extern MPI_Comm mpi_comm_world;
 extern FILE * out_logfile;
 
 void set_o_direct_flag(int *fd);

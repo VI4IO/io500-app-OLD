@@ -1044,7 +1044,7 @@ S3_Close_internal( void*         fd,
 						MPI_Abort(param->testComm, 1);
 					}
 					MPI_Gather(etag_data, etag_data_size, MPI_BYTE,
-								  etag_vec,  etag_data_size, MPI_BYTE, 0, MPI_COMM_WORLD);
+								  etag_vec,  etag_data_size, MPI_BYTE, 0, testComm);
 
 					// --- debugging: show the gathered etag data
 					//     (This shows the raw concatenated etag-data from each node.)
@@ -1167,7 +1167,7 @@ S3_Close_internal( void*         fd,
 
 				else {
 					MPI_Gather(etag_data, etag_data_size, MPI_BYTE,
-								  NULL,      etag_data_size, MPI_BYTE, 0, MPI_COMM_WORLD);
+								  NULL,      etag_data_size, MPI_BYTE, 0, testComm);
 				}
 			}
 
