@@ -1180,7 +1180,7 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
           }
 
           progress->stone_wall_timer_seconds = 0;
-          progress->items_start = progress->items_done;
+          progress->items_start = progress.items_done;
           progress->items_per_dir = max_iter;
           create_remove_items(0, 0, 1, 0, temp_path, 0, progress);
           progress->stone_wall_timer_seconds = stone_wall_timer_seconds;
