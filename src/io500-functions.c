@@ -233,11 +233,13 @@ void io500_touch(char * const filename){
 
 void io500_cleanup(io500_options_t* options){
   if(io500_rank == 0){
-    printf("\nCleaning working directory: %s", CurrentTimeString());
+    printf("\nCleaning files from working directory: %s", CurrentTimeString());
   }
   io500_parallel_find_or_delete(stdout, options->workdir, NULL, 1, 0);
   if(io500_rank == 0){
-    printf("\nDone: %s", CurrentTimeString());
+    printf("Done: %s", CurrentTimeString());
+    printf("  If you want to use the same directory with different numbers of ranks,\n"
+           "  remove the directory structure with rm -r, too\n");
   }
 }
 

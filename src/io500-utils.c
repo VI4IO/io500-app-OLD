@@ -49,7 +49,7 @@ char ** io500_str_to_arr_prep_exec(char * str, int * out_count){
 
 void io500_error(char * const str){
   if(io500_rank == 0){
-    printf("IO500 error: %s at %s\n", str, CurrentTimeString());
+    printf("\nIO500 critical error: %s\nError timestamp: %s\n", str, CurrentTimeString());
   }
   MPI_Abort(MPI_COMM_WORLD, 1);
 }

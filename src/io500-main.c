@@ -28,10 +28,9 @@ int main(int argc, char ** argv){
   if(options->only_cleanup){
     // make sure there exists the file IO500_TIMESTAMP
     if(! io500_contains_workdir_tag(options)){
-      io500_error("I will not delete the directory in parallel as the file "
+      io500_error("I will not delete the directory in parallel as the file"
         "IO500-testfile does not exist,\n"
-        "maybe it's the wrong directory!\n"
-        "If you are sure create the file\n");
+        "Maybe it's the wrong directory! If you are sure create the file");
     }
 
     io500_cleanup(options);
