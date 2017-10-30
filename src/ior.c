@@ -636,7 +636,8 @@ void AllocResults(IOR_test_t *test)
                 return;
 
         reps = test->params.repetitions;
-        test->results = (IOR_results_t *)malloc(sizeof(IOR_results_t));
+        test->results = (IOR_results_t *) malloc(sizeof(IOR_results_t));
+        memset(test->results, 0, sizeof(IOR_results_t));
         if (test->results == NULL)
                 ERR("malloc of IOR_results_t failed");
 
@@ -2624,13 +2625,24 @@ static IOR_offset_t WriteOrRead(IOR_param_t * test, IOR_results_t * results, voi
           if (verbose >= VERBOSE_1){
             fprintf(out_logfile, "%d: stonewalling pairs accessed: %lld\n", rank, (long long) pairCnt);
           }
+          long long data_moved_ll = (long long) dataMoved;
+          long long pairs_accessed_min;
           MPI_CHECK(MPI_Allreduce(& pairCnt, &results->pairs_accessed,
                                   1, MPI_LONG_LONG_INT, MPI_MAX, testComm), "cannot reduce pairs moved");
-          long long min_accessed = 0;
-          MPI_CHECK(MPI_Reduce(& pairCnt, &min_accessed,
+          double stonewall_runtime = GetTimeStamp() - startForStonewall;
+          results->stonewall_time = stonewall_runtime;
+          MPI_CHECK(MPI_Reduce(& pairCnt, & pairs_accessed_min,
                                   1, MPI_LONG_LONG_INT, MPI_MIN, 0, testComm), "cannot reduce pairs moved");
+          MPI_CHECK(MPI_Reduce(& data_moved_ll, & results->stonewall_min_data_accessed,
+                                  1, MPI_LONG_LONG_INT, MPI_MIN, 0, testComm), "cannot reduce pairs moved");
+          MPI_CHECK(MPI_Reduce(& data_moved_ll, & results->stonewall_avg_data_accessed,
+                                  1, MPI_LONG_LONG_INT, MPI_SUM, 0, testComm), "cannot reduce pairs moved");
+
           if(rank == 0){
-            fprintf(out_logfile, "stonewalling pairs accessed min: %lld max: %lld\n", min_accessed, (long long) results->pairs_accessed);
+            fprintf(out_logfile, "stonewalling pairs accessed min: %lld max: %zu -- max data: %.1f GiB mean data: %.1f GiB time: %.1fs\n",
+             pairs_accessed_min, results->pairs_accessed,
+             results->stonewall_min_data_accessed /1024.0 / 1024 / 1024,  results->stonewall_avg_data_accessed /1024.0 / 1024 / 1024, results->stonewall_time);
+             results->stonewall_min_data_accessed *= test->numTasks;
           }
           if(pairCnt != results->pairs_accessed){
             // some work needs still to be done !

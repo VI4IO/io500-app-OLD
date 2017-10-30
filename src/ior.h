@@ -214,6 +214,11 @@ typedef struct {
    double *readTime;
    int errors;
    size_t pairs_accessed; // number of I/Os done, useful for deadlineForStonewalling
+
+   double stonewall_time;
+   long long stonewall_min_data_accessed;
+   long long stonewall_avg_data_accessed;
+
    IOR_offset_t *aggFileSizeFromStat;
    IOR_offset_t *aggFileSizeFromXfer;
    IOR_offset_t *aggFileSizeForBW;
