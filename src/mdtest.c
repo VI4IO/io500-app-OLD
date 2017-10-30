@@ -941,6 +941,8 @@ void directory_test(const int iteration, const int ntasks, const char *path, ran
     double t[5] = {0};
     char temp_path[MAX_LEN];
 
+    MPI_Comm_size(testComm, &size);
+
     if (( rank == 0 ) && ( verbose >= 1 )) {
         fprintf( out_logfile, "V-1: Entering directory_test...\n" );
         fflush( out_logfile );
@@ -1087,8 +1089,6 @@ void directory_test(const int iteration, const int ntasks, const char *path, ran
         offset_timers(t, 4);
     }
 
-    MPI_Comm_size(testComm, &size);
-
     /* calculate times */
     if (create_only) {
         summary_table[iteration].rate[0] = items*size/(t[1] - t[0]);
@@ -1134,6 +1134,7 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
     int size;
     double t[5] = {0};
     char temp_path[MAX_LEN];
+    MPI_Comm_size(testComm, &size);
 
     if (( rank == 0 ) && ( verbose >= 1 )) {
         fprintf( out_logfile, "V-1: Entering file_test...\n" );
@@ -1176,11 +1177,19 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
           }
           long long unsigned max_iter = 0;
           MPI_Allreduce(& progress->items_done, & max_iter, 1, MPI_INT, MPI_MAX, testComm);
+          summary_table[iteration].stonewall_time[0] = MPI_Wtime() - t[0];
+
           // continue to the maximum...
           long long min_accessed = 0;
-          MPI_Reduce(& progress->items_done, &min_accessed, 1, MPI_LONG_LONG_INT, MPI_MIN, 0, testComm);
+          MPI_Reduce(& progress->items_done, & min_accessed, 1, MPI_LONG_LONG_INT, MPI_MIN, 0, testComm);
+
+          long long sum_accessed = 0;
+          MPI_Reduce(& progress->items_done, & sum_accessed, 1, MPI_LONG_LONG_INT, MPI_SUM, 0, testComm);
+
           if (rank == 0 ) {
-            fprintf( out_logfile, "V-1: continue stonewall hit min: %lld max: %lld\n", min_accessed, max_iter);
+            summary_table[iteration].stonewall_item_sum[MDTEST_FILE_CREATE_NUM] = sum_accessed;
+            summary_table[iteration].stonewall_item_min[MDTEST_FILE_CREATE_NUM] = min_accessed * size;
+            fprintf( out_logfile, "V-1: continue stonewall hit min: %lld max: %lld avg: %.1f \n", min_accessed, max_iter, ((double) sum_accessed) / size);
             fflush( out_logfile );
           }
 
@@ -1301,8 +1310,6 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
     if (unique_dir_per_task && !time_unique_dir_overhead) {
         offset_timers(t, 4);
     }
-
-    MPI_Comm_size(testComm, &size);
 
     /* calculate times */
     if (create_only) {
@@ -2474,11 +2481,11 @@ mdtest_results_t * mdtest_run(int argc, char **argv, MPI_Comm world_com, FILE * 
 
     /* setup summary table for recording results */
     summary_table = (mdtest_results_t *) malloc(iterations * sizeof(mdtest_results_t));
+    memset(summary_table, 0, sizeof(mdtest_results_t));
     for(int i=0; i < iterations; i++){
       for(int j=0; j < MDTEST_LAST_NUM; j++){
         summary_table[i].rate[j] = 0.0;
         summary_table[i].time[j] = 0.0;
-        summary_table[i].items[j] = 0;
       }
     }
 

@@ -20,7 +20,11 @@ typedef struct
     double rate[MDTEST_LAST_NUM];
     double time[MDTEST_LAST_NUM];
     uint64_t items[MDTEST_LAST_NUM];
+
     uint64_t stonewall_last_item[MDTEST_LAST_NUM];
+    double stonewall_time[MDTEST_LAST_NUM];
+    uint64_t stonewall_item_min[MDTEST_LAST_NUM];
+    uint64_t stonewall_item_sum[MDTEST_LAST_NUM];
 } mdtest_results_t;
 
 mdtest_results_t * mdtest_run(int argc, char **argv, MPI_Comm world_com, FILE * out_logfile);
