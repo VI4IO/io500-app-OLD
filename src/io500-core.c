@@ -289,7 +289,7 @@ static IOR_test_t * io500_io_easy_read(io500_options_t * options, IOR_test_t * c
   pos += sprintf(& args[pos], "\n-o\n%s/ior_easy/file", options->workdir);
   pos += sprintf(& args[pos], "\n%s", options->ior_easy_options);
 
-  return io500_run_ior_really(args, "ior_easy_create", 1, options);
+  return io500_run_ior_really(args, "ior_easy_read", 1, options);
 }
 
 static mdtest_results_t * io500_run_mdtest_really(char * args, char * suffix, int testID, io500_options_t * options){
@@ -475,8 +475,14 @@ static void io500_create_workdir(io500_options_t * options){
 static void io500_print_bw(const char * prefix, int id, IOR_test_t * stat, int read){
   double timer = read ? stat->results->readTime[0] : stat->results->writeTime[0];
   double gibsize = stat->results->aggFileSizeFromXfer[0] / 1024.0 / 1024.0 / 1024.0;
-  printf("[Result] IOR %s bw: %.3f GiB/s time: %.1fs size: %.1f GiB\n",
+  printf("[Result] IOR %s bw: %.3f GiB/s time: %.1fs size: %.1f GiB",
   prefix, gibsize / timer, timer, gibsize );
+  if(stat->results->stonewall_min_data_accessed != 0){
+    printf(" (perf at stonewall min: %.3f GiB/s avg: %.3f GiB/s)",
+      stat->results->stonewall_min_data_accessed / stat->results->stonewall_time / 1024.0 / 1024.0 / 1024.0,
+      stat->results->stonewall_avg_data_accessed / stat->results->stonewall_time / 1024.0 / 1024.0 / 1024.0);
+  }
+  printf("\n");
 }
 
 static void io500_print_md(const char * prefix, int id, mdtest_test_num_t pos, mdtest_results_t * stat){
@@ -487,7 +493,11 @@ static void io500_print_md(const char * prefix, int id, mdtest_test_num_t pos, m
   //    printf("%d %f\n", i, stat->entry[i]);
   //  }
   //}
-  printf("[Result] mdtest %s rate: %.3f kioops time: %.1fs\n", prefix, val, tim);
+  printf("[Result] mdtest %s rate: %.3f kioops time: %.1fs", prefix, val, tim);
+  if(stat->stonewall_item_sum[pos] != 0){
+    printf(" (perf at stonewall min: %.1f kiops avg: %.1f kiops)", stat->stonewall_item_min[pos] / 1000.0, stat->stonewall_item_sum[pos] / 1000.0);
+  }
+  printf("\n");
 }
 
 static void io500_print_find(io500_find_results_t * find){
