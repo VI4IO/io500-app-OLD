@@ -57,29 +57,30 @@ static char ** io500_str_to_arr(char * str, int * out_count){
 
 static void io500_print_help(io500_options_t * res){
   if(rank != 0) return;
-  printf("\nIO500 benchmark\nSynopsis:\n"
-      "\t-a <API>: API for I/O [POSIX|MPIIO|HDF5|HDFS|S3|S3_EMC|NCMPI] = %s\n"
+  printf("IO500 benchmark\nSynopsis:\n"
       "\t-w <DIR>: The working directory for the benchmarks = \"%s\"\n"
       "\t-r <DIR>: The result directory for the individual results = \"%s\"\n"
       "Optional flags\n"
-      "\t-C parallel delete of files in the working directory\n"
-      "\t-e <IOR easy options>: any acceptable IOR easy option = \"%s\"\n"
-      "\t-E <IOR hard options>: any acceptable IOR easy option = \"%s\"\n"
-      "\t-s <seconds>: Stonewall timer for create = %d\n"
-      "\t-S: Activate stonewall timer for read, too (default off), use twice to also activate stonewall for delete and prevent cleanup\n"
-      "\t-I <N>: Max segments for iorhard = %d\n"
-      "\t-f <N>: Max number of files for mdeasy = %d\n"
-      "\t-F <N>: Max number of files for mdhard = %d\n"
+      "\t-a <API>: API for I/O [POSIX|MPIIO|HDF5|HDFS|S3|S3_EMC|NCMPI] = %s\n"
+      "\t-s <seconds>: Stonewall timer for all create/write phases = %d\n"
+      "\t-S: Activate stonewall timer for all read phases (default off)\n\t\tuse -S -S to also activate stonewall timer for delete and skip final cleanup phase (useful when formating the partition)\n"
+      "\t-e <IOR easy options>: additional acceptable IOR easy option = \"%s\"\n"
+      "\t-E <IOR hard options>: additional acceptable IOR hard option = \"%s\"\n"
+      "\t-I <N>: Max segments for ior_hard = %d\n"
+      "\t-f <N>: Max number of files for mdtest_easy = %d\n"
+      "\t-F <N>: Max number of files for mdtest_hard = %d\n"
+      "\t-v: increase the verbosity, use multiple times to increase level = %d\n"
+      "Useful utility flags\n"
+      "\t-C: only parallel delete of files in the working directory, use to cleanup leftovers from aborted runs\n"
+      "\t-l: Log all processes into individual result files, otherwise only rank 0 logs its output\n"
       "\t-h: prints the help\n"
-      "\t--help: prints the help without initializing MPI\n"
-      "\t-l: Log all processes into individual result files, otherwise only rank 0\n"
-      "\t-v: increase the verbosity, use multiple times to increase level = %d\n",
-      res->backend_name,
+      "\t--help: prints the help without initializing MPI\n",
       res->workdir,
       res->results_dir,
+      res->backend_name,
+      res->stonewall_timer,
       res->ior_easy_options,
       res->ior_hard_options,
-      res->stonewall_timer,
       res->iorhard_max_segments,
       res->mdeasy_max_files,
       res->mdhard_max_files,
@@ -505,6 +506,47 @@ static void io500_print_find(io500_find_results_t * find){
     printf("[Result] find rate: %.3f kiops/s time: %.1fs err: %ld found: %ld (scanned %ld files)\n",  find->rate / 1000, find->runtime, find->errors, find->found_files, find->total_files);
 }
 
+static void io500_print_startup(int argc, char ** argv){
+  int nodes = CountTasksPerNode(size, MPI_COMM_WORLD);
+
+  char * procName;
+  if(size < 1000){
+    procName = (char *) malloc(MPI_MAX_PROCESSOR_NAME * size);
+    int res;
+    MPI_Get_processor_name(procName, & res);
+
+    if(rank != 0){
+      MPI_Gather(procName, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, NULL, 0, MPI_CHAR, 0, MPI_COMM_WORLD);
+      free(procName);
+      return;
+    }
+  }else if (rank != 0){
+    return;
+  }
+  printf("IO500 starting: %s\n", CurrentTimeString());
+  printf("Arguments: %s", argv[0]);
+  for(int i=1 ; i < argc; i++){
+    printf(" \"%s\"", argv[i]);
+  }
+  printf("\n");
+  printf("Runtime:\n");
+  printf("NODES=%d\n", nodes);
+  printf("NPROC=%d\n", size);
+
+  if(size < 1000){
+    MPI_Gather(procName, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, procName, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, 0, MPI_COMM_WORLD);
+    printf("RANK_MAP=");
+
+    char * curP = procName;
+    printf("%d:%s", 0, curP);
+    for(int i=1; i < size; i++){
+      printf(",%d:%s", i, curP);
+      curP += strlen(curP) + 1;
+    }
+    printf("\n");
+    free(procName);
+  }
+}
 
 int main(int argc, char ** argv){
   // output help with --help to enable running without mpiexec
@@ -521,12 +563,8 @@ int main(int argc, char ** argv){
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  if(rank == 0){
-    printf("IO500 starting: %s\n", CurrentTimeString());
-    printf("nproc=%d\n", size);
-    printf("\n");
-  }
   io500_options_t * options = io500_parse_args(argc, argv, 0);
+  io500_print_startup(argc, argv);
 
   if(options->only_cleanup){
     // make sure there exists the file IO500_TIMESTAMP
