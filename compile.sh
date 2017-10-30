@@ -2,6 +2,8 @@
 CC=mpicc
 CFLAGS="-g -O2 -fstack-protector-all -Wextra"
 
+rm *.o 2>&1 || true
+
 pushd ior-1
 echo "Building IOR + MDTEST"
 
@@ -17,7 +19,10 @@ $CC -DHAVE_CONFIG_H -I. $CFLAGS -c -o ior-aiori-POSIX.o src/aiori-POSIX.c
 popd
 
 echo "Building IO500"
-$CC $CFLAGS -Wall -I ior-1/src -c src/io500-core.c || exit 1
+$CC $CFLAGS -Wall -I ior-1/src -c src/io500-main.c || exit 1
+$CC $CFLAGS -Wall -I ior-1/src -c src/io500-functions.c || exit 1
+$CC $CFLAGS -Wall -I ior-1/src -c src/io500-utils.c || exit 1
+$CC $CFLAGS -Wall -I ior-1/src -c src/io500-options.c || exit 1
 $CC $CFLAGS -Wall -I ior-1/src -I libcircle/libcircle/ -c src/io500-find.c || exit 1
 $CC $CFLAGS -o io500 ior-1/*.o *.o libcircle/.libs/libcircle.a -lm  || exit 1
 

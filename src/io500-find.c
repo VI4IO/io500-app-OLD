@@ -13,7 +13,9 @@
 // this version is based on mpistat
 #include <utilities.h>
 
-#include "io500.h"
+#include "io500-types.h"
+#include "io500-functions.h"
+#include "io500-utils.h"
 
 // parallel recursive find
 
