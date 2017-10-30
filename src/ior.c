@@ -2626,7 +2626,7 @@ static IOR_offset_t WriteOrRead(IOR_param_t * test, IOR_results_t * results, voi
             fprintf(out_logfile, "%d: stonewalling pairs accessed: %lld\n", rank, (long long) pairCnt);
           }
           long long data_moved_ll = (long long) dataMoved;
-          long long pairs_accessed_min;
+          long long pairs_accessed_min = 0;
           MPI_CHECK(MPI_Allreduce(& pairCnt, &results->pairs_accessed,
                                   1, MPI_LONG_LONG_INT, MPI_MAX, testComm), "cannot reduce pairs moved");
           double stonewall_runtime = GetTimeStamp() - startForStonewall;
