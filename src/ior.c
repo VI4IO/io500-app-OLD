@@ -549,7 +549,7 @@ static int CountErrors(IOR_param_t * test, int access, int errors)
  * NOTE: This also assumes that the task count on all nodes is equal
  * to the task count on the host running MPI task 0.
  */
-static int CountTasksPerNode(int numTasks, MPI_Comm comm)
+int CountTasksPerNode(int numTasks, MPI_Comm comm)
 {
         char localhost[MAX_STR];
         char hostname0[MAX_STR];

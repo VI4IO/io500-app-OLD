@@ -236,6 +236,7 @@ IOR_test_t *CreateTest(IOR_param_t *init_params, int test_num);
 void AllocResults(IOR_test_t *test);
 void GetPlatformName(char *);
 void init_IOR_Param_t(IOR_param_t *p);
+int CountTasksPerNode(int numTasks, MPI_Comm comm);
 
 /*
  * This function runs IOR given by command line, useful for testing
