@@ -1094,21 +1094,25 @@ void directory_test(const int iteration, const int ntasks, const char *path, ran
         summary_table[iteration].rate[0] = items*size/(t[1] - t[0]);
         summary_table[iteration].time[0] = t[1] - t[0];
         summary_table[iteration].items[0] = items*size;
+        summary_table[iteration].stonewall_last_item[0] = items;
     }
     if (stat_only) {
         summary_table[iteration].rate[1] = items*size/(t[2] - t[1]);
         summary_table[iteration].time[1] = t[2] - t[1];
         summary_table[iteration].items[1] = items*size;
+        summary_table[iteration].stonewall_last_item[1] = items;
     }
     if (read_only) {
         summary_table[iteration].rate[2] = items*size/(t[3] - t[2]);
         summary_table[iteration].time[2] = t[3] - t[2];
         summary_table[iteration].items[2] = items*size;
+        summary_table[iteration].stonewall_last_item[2] = items;
     }
     if (remove_only) {
         summary_table[iteration].rate[3] = items*size/(t[4] - t[3]);
         summary_table[iteration].time[3] = t[4] - t[3];
         summary_table[iteration].items[3] = items*size;
+        summary_table[iteration].stonewall_last_item[3] = items;
     }
 
     if (verbose >= 1 && rank == 0) {
@@ -1305,21 +1309,25 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
         summary_table[iteration].rate[4] = items*size/(t[1] - t[0]);
         summary_table[iteration].time[4] = t[1] - t[0];
         summary_table[iteration].items[4] = items*size;
+        summary_table[iteration].stonewall_last_item[4] = items;
     }
     if (stat_only) {
         summary_table[iteration].rate[5] = items*size/(t[2] - t[1]);
         summary_table[iteration].time[5] = t[2] - t[1];
         summary_table[iteration].items[5] = items*size;
+        summary_table[iteration].stonewall_last_item[5] = items;
     }
     if (read_only) {
         summary_table[iteration].rate[6] = items*size/(t[3] - t[2]);
         summary_table[iteration].time[6] = t[3] - t[2];
         summary_table[iteration].items[6] = items*size;
+        summary_table[iteration].stonewall_last_item[6] = items;
     }
     if (remove_only) {
         summary_table[iteration].rate[7] = items*size/(t[4] - t[3]);
         summary_table[iteration].time[7] = t[4] - t[3];
         summary_table[iteration].items[7] = items*size;
+        summary_table[iteration].stonewall_last_item[7] = items;
     }
 
     if (verbose >= 1 && rank == 0) {
@@ -1945,13 +1953,12 @@ static void mdtest_iteration(int i, int j, MPI_Group testgroup, mdtest_results_t
           num_dirs_in_tree / (endCreate - startCreate);
       summary_table->time[8] = (endCreate - startCreate);
       summary_table->items[8] = num_dirs_in_tree;
+      summary_table->stonewall_last_item[8] = num_dirs_in_tree;
       if (verbose >= 1 && rank == 0) {
           fprintf(out_logfile, "V-1: main:   Tree creation     : %14.3f sec, %14.3f ops/sec\n",
                  (endCreate - startCreate), summary_table->rate[8]);
           fflush(out_logfile);
       }
-  } else {
-      summary_table->rate[8] = 0;
   }
   sprintf(unique_mk_dir, "%s/%s.0", testdir, base_tree_name);
   sprintf(unique_chdir_dir, "%s/%s.0", testdir, base_tree_name);
@@ -2084,6 +2091,7 @@ static void mdtest_iteration(int i, int j, MPI_Group testgroup, mdtest_results_t
       summary_table->rate[9] = num_dirs_in_tree / (endCreate - startCreate);
       summary_table->time[9] = endCreate - startCreate;
       summary_table->items[9] = num_dirs_in_tree;
+      summary_table->stonewall_last_item[8] = num_dirs_in_tree;
       if (verbose >= 1 && rank == 0) {
           fprintf(out_logfile, "V-1: main   Tree removal      : %14.3f sec, %14.3f ops/sec\n",
                  (endCreate - startCreate), summary_table->rate[9]);
