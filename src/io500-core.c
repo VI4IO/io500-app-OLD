@@ -495,7 +495,8 @@ static void io500_print_md(const char * prefix, int id, mdtest_test_num_t pos, m
   //}
   printf("[Result] mdtest %s rate: %.3f kioops time: %.1fs", prefix, val, tim);
   if(stat->stonewall_item_sum[pos] != 0){
-    printf(" (perf at stonewall min: %.1f kiops avg: %.1f kiops)", stat->stonewall_item_min[pos] / 1000.0, stat->stonewall_item_sum[pos] / 1000.0);
+    printf(" (perf at stonewall min: %.1f kiops avg: %.1f kiops)", stat->stonewall_item_min[pos] / 1000.0 / stat->stonewall_time[pos],
+    stat->stonewall_item_sum[pos] / 1000.0 / stat->stonewall_time[pos]);
   }
   printf("\n");
 }
