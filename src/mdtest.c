@@ -1177,7 +1177,7 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
           }
           long long unsigned max_iter = 0;
           MPI_Allreduce(& progress->items_done, & max_iter, 1, MPI_INT, MPI_MAX, testComm);
-          summary_table[iteration].stonewall_time[0] = MPI_Wtime() - t[0];
+          summary_table[iteration].stonewall_time[MDTEST_FILE_CREATE_NUM] = MPI_Wtime() - t[0];
 
           // continue to the maximum...
           long long min_accessed = 0;
@@ -1186,7 +1186,7 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
           long long sum_accessed = 0;
           MPI_Reduce(& progress->items_done, & sum_accessed, 1, MPI_LONG_LONG_INT, MPI_SUM, 0, testComm);
 
-          if (rank == 0 ) {
+          if (rank == 0 && items != sum_accessed / size) {
             summary_table[iteration].stonewall_item_sum[MDTEST_FILE_CREATE_NUM] = sum_accessed;
             summary_table[iteration].stonewall_item_min[MDTEST_FILE_CREATE_NUM] = min_accessed * size;
             fprintf( out_logfile, "V-1: continue stonewall hit min: %lld max: %lld avg: %.1f \n", min_accessed, max_iter, ((double) sum_accessed) / size);

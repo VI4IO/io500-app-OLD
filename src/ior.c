@@ -2639,10 +2639,14 @@ static IOR_offset_t WriteOrRead(IOR_param_t * test, IOR_results_t * results, voi
                                   1, MPI_LONG_LONG_INT, MPI_SUM, 0, testComm), "cannot reduce pairs moved");
 
           if(rank == 0){
-            fprintf(out_logfile, "stonewalling pairs accessed min: %lld max: %zu -- max data: %.1f GiB mean data: %.1f GiB time: %.1fs\n",
+            fprintf(out_logfile, "stonewalling pairs accessed min: %lld max: %zu -- min data: %.1f GiB mean data: %.1f GiB time: %.1fs\n",
              pairs_accessed_min, results->pairs_accessed,
-             results->stonewall_min_data_accessed /1024.0 / 1024 / 1024,  results->stonewall_avg_data_accessed /1024.0 / 1024 / 1024, results->stonewall_time);
+             results->stonewall_min_data_accessed /1024.0 / 1024 / 1024,  results->stonewall_avg_data_accessed / 1024.0 / 1024 / 1024 / test->numTasks , results->stonewall_time);
              results->stonewall_min_data_accessed *= test->numTasks;
+          }
+          if(pairs_accessed_min == pairCnt){
+            results->stonewall_min_data_accessed = 0;
+            results->stonewall_avg_data_accessed = 0;
           }
           if(pairCnt != results->pairs_accessed){
             // some work needs still to be done !
