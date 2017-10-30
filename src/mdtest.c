@@ -130,6 +130,7 @@ static uint64_t num_dirs_in_tree;
  * a larger variable.
  */
 static uint64_t items_per_dir;
+static int print_time;
 static int random_seed;
 static int shared_file;
 static int files_only;
@@ -147,7 +148,7 @@ static int sync_file;
 static int path_count;
 static int nstride; /* neighbor stride */
 
-static table_t * summary_table;
+static mdtest_results_t * summary_table;
 static pid_t pid;
 static uid_t uid;
 
@@ -1090,37 +1091,37 @@ void directory_test(const int iteration, const int ntasks, const char *path, ran
 
     /* calculate times */
     if (create_only) {
-        summary_table[iteration].entry[0] = items*size/(t[1] - t[0]);
-    } else {
-        summary_table[iteration].entry[0] = 0;
+        summary_table[iteration].rate[0] = items*size/(t[1] - t[0]);
+        summary_table[iteration].time[0] = t[1] - t[0];
+        summary_table[iteration].items[0] = items*size;
     }
     if (stat_only) {
-        summary_table[iteration].entry[1] = items*size/(t[2] - t[1]);
-    } else {
-        summary_table[iteration].entry[1] = 0;
+        summary_table[iteration].rate[1] = items*size/(t[2] - t[1]);
+        summary_table[iteration].time[1] = t[2] - t[1];
+        summary_table[iteration].items[1] = items*size;
     }
     if (read_only) {
-        summary_table[iteration].entry[2] = items*size/(t[3] - t[2]);
-    } else {
-        summary_table[iteration].entry[2] = 0;
+        summary_table[iteration].rate[2] = items*size/(t[3] - t[2]);
+        summary_table[iteration].time[2] = t[3] - t[2];
+        summary_table[iteration].items[2] = items*size;
     }
     if (remove_only) {
-        summary_table[iteration].entry[3] = items*size/(t[4] - t[3]);
-    } else {
-        summary_table[iteration].entry[3] = 0;
+        summary_table[iteration].rate[3] = items*size/(t[4] - t[3]);
+        summary_table[iteration].time[3] = t[4] - t[3];
+        summary_table[iteration].items[3] = items*size;
     }
 
     if (verbose >= 1 && rank == 0) {
         fprintf(out_logfile, "V-1:   Directory creation: %14.3f sec, %14.3f ops/sec\n",
-               t[1] - t[0], summary_table[iteration].entry[0]);
+               t[1] - t[0], summary_table[iteration].rate[0]);
         fprintf(out_logfile, "V-1:   Directory stat    : %14.3f sec, %14.3f ops/sec\n",
-               t[2] - t[1], summary_table[iteration].entry[1]);
+               t[2] - t[1], summary_table[iteration].rate[1]);
 /* N/A
    fprintf(out_logfile, "V-1:   Directory read    : %14.3f sec, %14.3f ops/sec\n",
-   t[3] - t[2], summary_table[iteration].entry[2]);
+   t[3] - t[2], summary_table[iteration].rate[2]);
 */
         fprintf(out_logfile, "V-1:   Directory removal : %14.3f sec, %14.3f ops/sec\n",
-               t[4] - t[3], summary_table[iteration].entry[3]);
+               t[4] - t[3], summary_table[iteration].rate[3]);
         fflush(out_logfile);
     }
 }
@@ -1301,35 +1302,35 @@ void file_test(const int iteration, const int ntasks, const char *path, rank_pro
 
     /* calculate times */
     if (create_only) {
-        summary_table[iteration].entry[4] = items*size/(t[1] - t[0]);
-    } else {
-        summary_table[iteration].entry[4] = 0;
+        summary_table[iteration].rate[4] = items*size/(t[1] - t[0]);
+        summary_table[iteration].time[4] = t[1] - t[0];
+        summary_table[iteration].items[4] = items*size;
     }
     if (stat_only) {
-        summary_table[iteration].entry[5] = items*size/(t[2] - t[1]);
-    } else {
-        summary_table[iteration].entry[5] = 0;
+        summary_table[iteration].rate[5] = items*size/(t[2] - t[1]);
+        summary_table[iteration].time[5] = t[2] - t[1];
+        summary_table[iteration].items[5] = items*size;
     }
     if (read_only) {
-        summary_table[iteration].entry[6] = items*size/(t[3] - t[2]);
-    } else {
-        summary_table[iteration].entry[6] = 0;
+        summary_table[iteration].rate[6] = items*size/(t[3] - t[2]);
+        summary_table[iteration].time[6] = t[3] - t[2];
+        summary_table[iteration].items[6] = items*size;
     }
     if (remove_only) {
-        summary_table[iteration].entry[7] = items*size/(t[4] - t[3]);
-    } else {
-        summary_table[iteration].entry[7] = 0;
+        summary_table[iteration].rate[7] = items*size/(t[4] - t[3]);
+        summary_table[iteration].time[7] = t[4] - t[3];
+        summary_table[iteration].items[7] = items*size;
     }
 
     if (verbose >= 1 && rank == 0) {
         fprintf(out_logfile, "V-1:   File creation     : %14.3f sec, %14.3f ops/sec\n",
-               t[1] - t[0], summary_table[iteration].entry[4]);
+               t[1] - t[0], summary_table[iteration].rate[4]);
         fprintf(out_logfile, "V-1:   File stat         : %14.3f sec, %14.3f ops/sec\n",
-               t[2] - t[1], summary_table[iteration].entry[5]);
+               t[2] - t[1], summary_table[iteration].rate[5]);
         fprintf(out_logfile, "V-1:   File read         : %14.3f sec, %14.3f ops/sec\n",
-               t[3] - t[2], summary_table[iteration].entry[6]);
+               t[3] - t[2], summary_table[iteration].rate[6]);
         fprintf(out_logfile, "V-1:   File removal      : %14.3f sec, %14.3f ops/sec\n",
-               t[4] - t[3], summary_table[iteration].entry[7]);
+               t[4] - t[3], summary_table[iteration].rate[7]);
         fflush(out_logfile);
     }
 }
@@ -1342,7 +1343,7 @@ void print_help (void) {
         "              [-E] [-f first] [-F] [-h] [-i iterations] [-I items_per_dir] [-l last] [-L]\n"
         "              [-n number_of_items] [-N stride_length] [-p seconds] [-r]\n"
         "              [-R[seed]] [-s stride] [-S] [-t] [-T] [-u] [-v] [-a API]\n"
-        "              [-V verbosity_value] [-w number_of_bytes_to_write] [-W seconds] [-y] [-z depth]\n"
+        "              [-V verbosity_value] [-w number_of_bytes_to_write] [-W seconds] [-y] [-z depth] -Z\n"
         "\t-a: API for I/O [POSIX|MPIIO|HDF5|HDFS|S3|S3_EMC|NCMPI]\n"
         "\t-b: branching factor of hierarchical directory structure\n"
         "\t-B: no barriers between phases\n"
@@ -1375,6 +1376,7 @@ void print_help (void) {
         "\t-W: number in seconds; stonewall timer, write as many seconds and ensure all processes did the same number of operations\n"
         "\t-y: sync file after writing\n"
         "\t-z: depth of hierarchical directory structure\n"
+        "\t-Z: print time instead of rate\n"
         );
 
     MPI_Initialized(&j);
@@ -1387,7 +1389,7 @@ void print_help (void) {
 void summarize_results(int iterations) {
     char access[MAX_LEN];
     int i, j, k;
-    int start, stop, tableSize = 10;
+    int start, stop, tableSize = MDTEST_LAST_NUM;
     double min, max, mean, sd, sum = 0, var = 0, curr = 0;
 
     double all[iterations * size * tableSize];
@@ -1399,13 +1401,17 @@ void summarize_results(int iterations) {
     }
 
     MPI_Barrier(testComm);
-    MPI_Gather(& summary_table->entry[0], tableSize*iterations,
-               MPI_DOUBLE, all, tableSize*iterations, MPI_DOUBLE,
-               0, testComm);
+    for(int i=0; i < iterations; i++){
+      if(print_time){
+        MPI_Gather(& summary_table[i].time[0], tableSize, MPI_DOUBLE, & all[i*tableSize*size], tableSize, MPI_DOUBLE, 0, testComm);
+      }else{
+        MPI_Gather(& summary_table[i].rate[0], tableSize, MPI_DOUBLE, & all[i*tableSize*size], tableSize, MPI_DOUBLE, 0, testComm);
+      }
+    }
 
     if (rank == 0) {
 
-        fprintf(out_logfile, "\nSUMMARY: (of %d iterations)\n", iterations);
+        fprintf(out_logfile, "\nSUMMARY %s: (of %d iterations)\n", print_time ? "time": "rate", iterations);
         fprintf(out_logfile,
             "   Operation                      Max            Min           Mean        Std Dev\n");
         fprintf(out_logfile,
@@ -1444,8 +1450,7 @@ void summarize_results(int iterations) {
                 for (j=0; j<iterations; j++) {
                     maxes[j] = all[j*tableSize + i];
                     for (k=0; k<size; k++) {
-                        curr = all[(k*tableSize*iterations)
-                                   + (j*tableSize) + i];
+                        curr = all[(k*tableSize*iterations) + (j*tableSize) + i];
                         if (maxes[j] < curr) {
                             maxes[j] = curr;
                         }
@@ -1546,7 +1551,12 @@ void summarize_results(int iterations) {
         for (i = 8; i < tableSize; i++) {
             min = max = all[i];
             for (j = 0; j < iterations; j++) {
-                curr = summary_table[j].entry[i];
+                if(print_time){
+                  curr = summary_table[j].time[i];
+                }else{
+                  curr = summary_table[j].rate[i];
+                }
+
                 if (min > curr) {
                     min = curr;
                 }
@@ -1557,7 +1567,13 @@ void summarize_results(int iterations) {
             }
             mean = sum / (iterations);
             for (j = 0; j < iterations; j++) {
-                var += pow((mean -  summary_table[j].entry[i]), 2);
+                if(print_time){
+                  curr = summary_table[j].time[i];
+                }else{
+                  curr = summary_table[j].rate[i];
+                }
+
+                var += pow((mean -  curr), 2);
             }
             var = var / (iterations);
             sd = sqrt(var);
@@ -1836,7 +1852,7 @@ void create_remove_directory_tree(int create,
     }
 }
 
-static void mdtest_iteration(int i, int j, MPI_Group testgroup, table_t * summary_table, rank_progress_t * progress){
+static void mdtest_iteration(int i, int j, MPI_Group testgroup, mdtest_results_t * summary_table, rank_progress_t * progress){
   /* start and end times of directory tree create/remove */
   double startCreate, endCreate;
   int k, c;
@@ -1925,15 +1941,17 @@ static void mdtest_iteration(int i, int j, MPI_Group testgroup, table_t * summar
       }
       MPI_Barrier(testComm);
       endCreate = MPI_Wtime();
-      summary_table->entry[8] =
+      summary_table->rate[8] =
           num_dirs_in_tree / (endCreate - startCreate);
+      summary_table->time[8] = (endCreate - startCreate);
+      summary_table->items[8] = num_dirs_in_tree;
       if (verbose >= 1 && rank == 0) {
           fprintf(out_logfile, "V-1: main:   Tree creation     : %14.3f sec, %14.3f ops/sec\n",
-                 (endCreate - startCreate), summary_table->entry[8]);
+                 (endCreate - startCreate), summary_table->rate[8]);
           fflush(out_logfile);
       }
   } else {
-      summary_table->entry[8] = 0;
+      summary_table->rate[8] = 0;
   }
   sprintf(unique_mk_dir, "%s/%s.0", testdir, base_tree_name);
   sprintf(unique_chdir_dir, "%s/%s.0", testdir, base_tree_name);
@@ -2063,10 +2081,12 @@ static void mdtest_iteration(int i, int j, MPI_Group testgroup, table_t * summar
 
       MPI_Barrier(testComm);
       endCreate = MPI_Wtime();
-      summary_table->entry[9] = num_dirs_in_tree / (endCreate - startCreate);
+      summary_table->rate[9] = num_dirs_in_tree / (endCreate - startCreate);
+      summary_table->time[9] = endCreate - startCreate;
+      summary_table->items[9] = num_dirs_in_tree;
       if (verbose >= 1 && rank == 0) {
           fprintf(out_logfile, "V-1: main   Tree removal      : %14.3f sec, %14.3f ops/sec\n",
-                 (endCreate - startCreate), summary_table->entry[9]);
+                 (endCreate - startCreate), summary_table->rate[9]);
           fflush(out_logfile);
       }
 
@@ -2082,7 +2102,7 @@ static void mdtest_iteration(int i, int j, MPI_Group testgroup, table_t * summar
           }
       }
   } else {
-      summary_table->entry[9] = 0;
+      summary_table->rate[9] = 0;
   }
 }
 
@@ -2099,6 +2119,7 @@ void mdtest_init_args(){
    num_dirs_in_tree = 0;
    items_per_dir = 0;
    random_seed = 0;
+   print_time = 0;
    shared_file = 0;
    files_only = 0;
    dirs_only = 0;
@@ -2115,7 +2136,7 @@ void mdtest_init_args(){
    nstride = 0;
 }
 
-table_t * mdtest_run(int argc, char **argv, MPI_Comm world_com, FILE * world_out) {
+mdtest_results_t * mdtest_run(int argc, char **argv, MPI_Comm world_com, FILE * world_out) {
     testComm = world_com;
     out_logfile = world_out;
     mpi_comm_world = world_com;
@@ -2172,7 +2193,7 @@ table_t * mdtest_run(int argc, char **argv, MPI_Comm world_com, FILE * world_out
 
     verbose = 0;
     option_t *optList, *thisOpt;
-    optList = GetOptList(argc, argv, "a:b:BcCd:De:Ef:Fhi:I:l:Ln:N:p:rR::s:StTuvV:w:W:yz:");
+    optList = GetOptList(argc, argv, "a:b:BcCd:De:Ef:Fhi:I:l:Ln:N:p:rR::s:StTuvV:w:W:yz:Z");
 
 
     while (optList != NULL) {
@@ -2255,6 +2276,8 @@ table_t * mdtest_run(int argc, char **argv, MPI_Comm world_com, FILE * world_out
             sync_file = 1;                break;
         case 'z':
             depth = atoi(optarg);                  break;
+        case 'Z':
+            print_time = TRUE;                  break;
         }
     }
 
@@ -2442,8 +2465,15 @@ table_t * mdtest_run(int argc, char **argv, MPI_Comm world_com, FILE * world_out
     }
 
     /* setup summary table for recording results */
-    summary_table = (table_t *)malloc(iterations * sizeof(table_t));
-    memset(summary_table, 0, iterations * sizeof(table_t) );
+    summary_table = (mdtest_results_t *) malloc(iterations * sizeof(mdtest_results_t));
+    for(int i=0; i < iterations; i++){
+      for(int j=0; j < MDTEST_LAST_NUM; j++){
+        summary_table[i].rate[j] = 0.0;
+        summary_table[i].time[j] = 0.0;
+        summary_table[i].items[j] = 0;
+      }
+    }
+
     if (summary_table == NULL) {
         FAIL("out of memory");
     }
@@ -2501,7 +2531,7 @@ table_t * mdtest_run(int argc, char **argv, MPI_Comm world_com, FILE * world_out
               break;
             }
         }
-        summary_table->items = progress.items_done;
+        items = progress.items_done;
         summarize_results(iterations);
         if (i == 1 && stride > 1) {
             i = 0;
