@@ -318,7 +318,7 @@ void io500_print_md(const char * prefix, int id, mdtest_test_num_t pos, mdtest_r
   //    printf("%d %f\n", i, stat->entry[i]);
   //  }
   //}
-  printf("[Result] mdtest %s rate: %.3f kioops time: %.1fs", prefix, val, tim);
+  printf("[Result] mdtest %s rate: %.3f kiops time: %.1fs", prefix, val, tim);
   if(stat->stonewall_item_sum[pos] != 0){
     printf(" (perf at stonewall min: %.1f kiops avg: %.1f kiops)", stat->stonewall_item_min[pos] / 1000.0 / stat->stonewall_time[pos],
     stat->stonewall_item_sum[pos] / 1000.0 / stat->stonewall_time[pos]);
@@ -327,7 +327,7 @@ void io500_print_md(const char * prefix, int id, mdtest_test_num_t pos, mdtest_r
 }
 
 void io500_print_find(io500_find_results_t * find){
-    printf("[Result] find rate: %.3f kiops/s time: %.1fs err: %ld found: %ld (scanned %ld files)\n",  find->rate / 1000, find->runtime, find->errors, find->found_files, find->total_files);
+    printf("[Result] find rate: %.3f kiops time: %.1fs err: %ld found: %ld (scanned %ld files)\n",  find->rate / 1000, find->runtime, find->errors, find->found_files, find->total_files);
 }
 
 void io500_print_startup(int argc, char ** argv){
