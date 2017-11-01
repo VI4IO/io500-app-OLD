@@ -7,7 +7,6 @@
 #include "io500-types.h"
 
 
-
 int main(int argc, char ** argv){
   // output help with --help to enable running without mpiexec
   for(int i=0; i < argc; i++){
