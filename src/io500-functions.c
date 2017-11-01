@@ -346,7 +346,7 @@ void io500_print_startup(int argc, char ** argv, io500_options_t * options){
 
   char * procName = NULL;
   if(size < 1000){
-    procName = (char *) malloc(MPI_MAX_PROCESSOR_NAME * size);
+    procName = (char *) malloc(MPI_MAX_PROCESSOR_NAME);
     int res;
     MPI_Get_processor_name(procName, & res);
 
@@ -369,17 +369,19 @@ void io500_print_startup(int argc, char ** argv, io500_options_t * options){
   fprintf(options->output, "NPROC=%d\n", size);
 
   if(size < 1000){
-    MPI_Gather(procName, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, procName, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, 0, MPI_COMM_WORLD);
+    char * procNames = (char *) malloc(MPI_MAX_PROCESSOR_NAME * size);
+    MPI_Gather(procName, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, procNames, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, 0, MPI_COMM_WORLD);
     fprintf(options->output, "RANK_MAP=");
 
-    char * curP = procName;
+    char * curP = procNames;
     fprintf(options->output, "%d:%s", 0, curP);
     for(int i=1; i < size; i++){
       fprintf(options->output, ",%d:%s", i, curP);
-      curP += strlen(curP) + 1;
+      curP += MPI_MAX_PROCESSOR_NAME;
     }
     fprintf(options->output, "\n");
     free(procName);
+    free(procNames);
   }
   fflush(options->output);
 }
