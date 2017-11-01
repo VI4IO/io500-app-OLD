@@ -334,8 +334,8 @@ void io500_print_md(FILE * out, const char * prefix, int id, mdtest_test_num_t p
   fflush(out);
 }
 
-void io500_print_find(FILE * out,  io500_find_results_t * find){
-    fprintf(out, "[Result] find rate: %.3f kiops time: %.1fs err: %ld found: %ld (scanned %ld files)\n",  find->rate / 1000, find->runtime, find->errors, find->found_files, find->total_files);
+void io500_print_find(FILE * out, const char * prefix, io500_find_results_t * find){
+    fprintf(out, "[Result] %s rate: %.3f kiops time: %.1fs err: %ld found: %ld (scanned %ld files)\n",  prefix, find->rate / 1000, find->runtime, find->errors, find->found_files, find->total_files);
     fflush(out);
 }
 

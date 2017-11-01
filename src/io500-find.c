@@ -37,9 +37,8 @@ io500_find_results_t* io500_find(io500_options_t * opt){
 
   glob_expected_size = 3900; // TODO make that adjustable
   glob_verbosity = opt->verbosity;
-
+  char fname[4096];
   {
-    char fname[4096];
     sprintf(fname, "%s/IO500_TIMESTAMP", opt->workdir);
     if(lstat(fname, & compare_time_newer) != 0) {
       printf("Timestamp file: %s\n", fname);
@@ -47,9 +46,48 @@ io500_find_results_t* io500_find(io500_options_t * opt){
     }
   }
 
+  sprintf(fname, "%s/mdtest_easy", opt->workdir);
+
   //ior_aiori_t * backend = aiori_select(opt->backend_name);
   double start = GetTimeStamp();
-  io500_find_results_t * res = io500_parallel_find_or_delete(out_logfile, opt->workdir, "01", 0, opt->stonewall_timer_reads ? opt->stonewall_timer : 0 );
+  io500_find_results_t * res = io500_parallel_find_or_delete(out_logfile, fname, "01", 0, opt->stonewall_timer_reads ? opt->stonewall_timer : 0 );
+  double end = GetTimeStamp();
+  res->runtime = end - start;
+
+  double runtime = res->runtime;
+  long long found = res->found_files;
+  long long total_files = res->total_files;
+  MPI_Reduce(& runtime, & res->runtime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+  MPI_Reduce(& found, & res->found_files, 1, MPI_LONG_LONG_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(& total_files, & res->total_files, 1, MPI_LONG_LONG_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+
+  res->rate = res->total_files / res->runtime;
+
+  return res;
+}
+
+
+io500_find_results_t* io500_find_hard(io500_options_t * opt){
+  if(rank == 0){
+    fprintf(opt->output, "[Running] find: %s\n", CurrentTimeString());
+  }
+
+  glob_expected_size = 3900; // TODO make that adjustable
+  glob_verbosity = opt->verbosity;
+
+  char fname[4096];
+  {
+    sprintf(fname, "%s/IO500_TIMESTAMP", opt->workdir);
+    if(lstat(fname, & compare_time_newer) != 0) {
+      printf("Timestamp file: %s\n", fname);
+      io500_error("Could not read timestamp file!");
+    }
+  }
+  sprintf(fname, "%s/mdtest_hard", opt->workdir);
+
+  //ior_aiori_t * backend = aiori_select(opt->backend_name);
+  double start = GetTimeStamp();
+  io500_find_results_t * res = io500_parallel_find_or_delete(out_logfile, fname, "01", 0, opt->stonewall_timer_reads ? opt->stonewall_timer : 0 );
   double end = GetTimeStamp();
   res->runtime = end - start;
 

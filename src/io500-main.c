@@ -83,7 +83,13 @@ int main(int argc, char ** argv){
   FILE * fout = io500_prepare_out("find", 1, options);
   io500_find_results_t* find = io500_find(options);
   fclose(fout);
-  if(io500_rank == 0) io500_print_find(out, find);
+  if(io500_rank == 0) io500_print_find(out, "find-easy", find);
+
+  fout = io500_prepare_out("find-hard", 1, options);
+  io500_find_results_t* find2 = io500_find_hard(options);
+  fclose(fout);
+  if(io500_rank == 0) io500_print_find(out, "find-hard", find2);
+
 
   IOR_test_t * io_easy_read = io500_io_easy_read(options, io_easy_create);
   if(io500_rank == 0) io500_print_bw(out, "ior_easy_read", 2, io_easy_read, 1);
@@ -126,7 +132,8 @@ int main(int argc, char ** argv){
     io500_print_md(out, "mdtest_hard_stat",   7, MDTEST_FILE_STAT_NUM, md_hard_stat);
     io500_print_md(out, "mdtest_hard_delete", 8, MDTEST_FILE_REMOVE_NUM, md_hard_delete);
 
-    io500_print_find(out, find);
+    io500_print_find(out, "find-easy", find);
+    io500_print_find(out, "find-hard", find2);
   }
   if(! options->stonewall_timer_delete){
     io500_cleanup(options);

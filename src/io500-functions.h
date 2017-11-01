@@ -28,6 +28,7 @@ mdtest_results_t * io500_md_hard_stat(io500_options_t * options, mdtest_results_
 mdtest_results_t * io500_md_hard_delete(io500_options_t * options, mdtest_results_t * create_read);
 
 io500_find_results_t * io500_find(io500_options_t * opt);
+io500_find_results_t * io500_find_hard(io500_options_t * opt);
 
 
 
@@ -42,7 +43,7 @@ io500_find_results_t * io500_parallel_find_or_delete(FILE * out, char * workdir,
 
 void io500_cleanup(io500_options_t* options);
 
-void io500_print_find(FILE * out, io500_find_results_t * find);
+void io500_print_find(FILE * out, const char * prefix, io500_find_results_t * find);
 void io500_print_bw(FILE * out, const char * prefix, int id, IOR_test_t * stat, int read);
 void io500_print_md(FILE * out, const char * prefix, int id, mdtest_test_num_t pos, mdtest_results_t * stat);
 
