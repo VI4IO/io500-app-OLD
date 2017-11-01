@@ -24,6 +24,9 @@ typedef struct{
   int only_cleanup;
 
   int verbosity;
+  int write_output_to_log;
+
+  FILE * output;
 } io500_options_t;
 
 typedef struct{

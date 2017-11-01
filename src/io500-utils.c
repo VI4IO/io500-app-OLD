@@ -63,7 +63,12 @@ FILE * io500_prepare_out(char * suffix, int testID, io500_options_t * options){
     }else{
       sprintf(out, "%s/%s-%d.log", options->results_dir, suffix, testID);
     }
-    printf("[Output] %s\n", out);
+    if(testID == 0){
+      sprintf(out, "%s/%s", options->results_dir, suffix);
+    }
+    fprintf(options->output, "[Output] %s\n", out);
+    fflush(options->output);
+
     // open an output file
     FILE * ret = fopen(out, "w");
     if (ret == NULL){

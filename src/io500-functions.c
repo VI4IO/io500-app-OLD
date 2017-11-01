@@ -23,6 +23,8 @@ static IOR_test_t * io500_run_ior_really(char * args, char * suffix, int testID,
 
   if(io500_rank == 0){
     printf("\n[Starting] %s: %s", suffix, CurrentTimeString());
+    fprintf(options->output, "\n[Starting] %s: %s", suffix, CurrentTimeString());
+    fflush(options->output);
   }
 
   args_array = io500_str_to_arr_prep_exec(args, & argc_count);
@@ -123,6 +125,8 @@ static mdtest_results_t * io500_run_mdtest_really(char * args, char * suffix, in
 
   if(io500_rank == 0){
     printf("\n[Starting] %s: %s", suffix, CurrentTimeString());
+    fprintf(options->output, "\n[Starting] %s: %s", suffix, CurrentTimeString());
+    fflush(options->output);
   }
 
   args_array = io500_str_to_arr_prep_exec(args, & argc_count);
@@ -233,13 +237,15 @@ void io500_touch(char * const filename){
 
 void io500_cleanup(io500_options_t* options){
   if(io500_rank == 0){
-    printf("\nCleaning files from working directory: %s", CurrentTimeString());
+    fprintf(options->output,"\nCleaning files from working directory: %s", CurrentTimeString());
+    fflush(options->output);
   }
   io500_parallel_find_or_delete(stdout, options->workdir, NULL, 1, 0);
   if(io500_rank == 0){
-    printf("Done: %s", CurrentTimeString());
-    printf("  If you want to use the same directory with different numbers of ranks,\n"
+    fprintf(options->output, "Done: %s", CurrentTimeString());
+    fprintf(options->output, "  If you want to use the same directory with different numbers of ranks,\n"
            "  remove the directory structure with rm -r, too\n");
+    fflush(options->output);
   }
 }
 
@@ -297,20 +303,21 @@ void io500_create_workdir(io500_options_t * options){
   io500_touch(dir);
 }
 
-void io500_print_bw(const char * prefix, int id, IOR_test_t * stat, int read){
+void io500_print_bw(FILE * out, const char * prefix, int id, IOR_test_t * stat, int read){
   double timer = read ? stat->results->readTime[0] : stat->results->writeTime[0];
   double gibsize = stat->results->aggFileSizeFromXfer[0] / 1024.0 / 1024.0 / 1024.0;
-  printf("[Result] IOR %s bw: %.3f GiB/s time: %.1fs size: %.1f GiB",
+  fprintf(out, "[Result] IOR %s bw: %.3f GiB/s time: %.1fs size: %.1f GiB",
   prefix, gibsize / timer, timer, gibsize );
   if(stat->results->stonewall_min_data_accessed != 0){
-    printf(" (perf at stonewall min: %.3f GiB/s avg: %.3f GiB/s)",
+    fprintf(out, " (perf at stonewall min: %.3f GiB/s avg: %.3f GiB/s)",
       stat->results->stonewall_min_data_accessed / stat->results->stonewall_time / 1024.0 / 1024.0 / 1024.0,
       stat->results->stonewall_avg_data_accessed / stat->results->stonewall_time / 1024.0 / 1024.0 / 1024.0);
   }
-  printf("\n");
+  fprintf(out, "\n");
+  fflush(out);
 }
 
-void io500_print_md(const char * prefix, int id, mdtest_test_num_t pos, mdtest_results_t * stat){
+void io500_print_md(FILE * out, const char * prefix, int id, mdtest_test_num_t pos, mdtest_results_t * stat){
   double val = stat->rate[pos] / 1000;
   double tim = stat->time[pos];
   //for(int i=0; i < 10; i++){
@@ -318,19 +325,21 @@ void io500_print_md(const char * prefix, int id, mdtest_test_num_t pos, mdtest_r
   //    printf("%d %f\n", i, stat->entry[i]);
   //  }
   //}
-  printf("[Result] mdtest %s rate: %.3f kiops time: %.1fs", prefix, val, tim);
+  fprintf(out, "[Result] mdtest %s rate: %.3f kiops time: %.1fs", prefix, val, tim);
   if(stat->stonewall_item_sum[pos] != 0){
-    printf(" (perf at stonewall min: %.1f kiops avg: %.1f kiops)", stat->stonewall_item_min[pos] / 1000.0 / stat->stonewall_time[pos],
+    fprintf(out, " (perf at stonewall min: %.1f kiops avg: %.1f kiops)", stat->stonewall_item_min[pos] / 1000.0 / stat->stonewall_time[pos],
     stat->stonewall_item_sum[pos] / 1000.0 / stat->stonewall_time[pos]);
   }
-  printf("\n");
+  fprintf(out, "\n");
+  fflush(out);
 }
 
-void io500_print_find(io500_find_results_t * find){
-    printf("[Result] find rate: %.3f kiops time: %.1fs err: %ld found: %ld (scanned %ld files)\n",  find->rate / 1000, find->runtime, find->errors, find->found_files, find->total_files);
+void io500_print_find(FILE * out,  io500_find_results_t * find){
+    fprintf(out, "[Result] find rate: %.3f kiops time: %.1fs err: %ld found: %ld (scanned %ld files)\n",  find->rate / 1000, find->runtime, find->errors, find->found_files, find->total_files);
+    fflush(out);
 }
 
-void io500_print_startup(int argc, char ** argv){
+void io500_print_startup(int argc, char ** argv, io500_options_t * options){
   int size;
   MPI_Comm_size(MPI_COMM_WORLD, & size);
   int nodes = CountTasksPerNode(size, MPI_COMM_WORLD);
@@ -349,27 +358,28 @@ void io500_print_startup(int argc, char ** argv){
   }else if (io500_rank != 0){
     return;
   }
-  printf("IO500 starting: %s\n", CurrentTimeString());
-  printf("Arguments: %s", argv[0]);
+  fprintf(options->output, "IO500 starting: %s\n", CurrentTimeString());
+  fprintf(options->output, "Arguments: %s", argv[0]);
   for(int i=1 ; i < argc; i++){
-    printf(" \"%s\"", argv[i]);
+    fprintf(options->output, " \"%s\"", argv[i]);
   }
-  printf("\n");
-  printf("Runtime:\n");
-  printf("NODES=%d\n", nodes);
-  printf("NPROC=%d\n", size);
+  fprintf(options->output, "\n");
+  fprintf(options->output, "Runtime:\n");
+  fprintf(options->output, "NODES=%d\n", nodes);
+  fprintf(options->output, "NPROC=%d\n", size);
 
   if(size < 1000){
     MPI_Gather(procName, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, procName, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, 0, MPI_COMM_WORLD);
-    printf("RANK_MAP=");
+    fprintf(options->output, "RANK_MAP=");
 
     char * curP = procName;
-    printf("%d:%s", 0, curP);
+    fprintf(options->output, "%d:%s", 0, curP);
     for(int i=1; i < size; i++){
-      printf(",%d:%s", i, curP);
+      fprintf(options->output, ",%d:%s", i, curP);
       curP += strlen(curP) + 1;
     }
-    printf("\n");
+    fprintf(options->output, "\n");
     free(procName);
   }
+  fflush(options->output);
 }

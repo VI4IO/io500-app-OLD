@@ -30,9 +30,9 @@ static double glob_endtime;
 
 static io500_find_results_t * res = NULL;
 
-io500_find_results_t* io500_find(FILE * out_logfile, io500_options_t * opt){
+io500_find_results_t* io500_find(io500_options_t * opt){
   if(rank == 0){
-    fprintf(out_logfile, "Running find: %s\n", CurrentTimeString());
+    fprintf(opt->output, "[Running] find: %s\n", CurrentTimeString());
   }
 
   glob_expected_size = 3900; // TODO make that adjustable

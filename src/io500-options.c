@@ -24,6 +24,7 @@ static void io500_print_help(io500_options_t * res){
       "Useful utility flags\n"
       "\t-C: only parallel delete of files in the working directory, use to cleanup leftovers from aborted runs\n"
       "\t-l: Log all processes into individual result files, otherwise only rank 0 logs its output\n"
+      "\t-L: Log output of main program to results-directory/IO500-summary.txt\n"
       "\t-h: prints the help\n"
       "\t--help: prints the help without initializing MPI\n",
       res->workdir,
@@ -56,10 +57,11 @@ io500_options_t * io500_parse_args(int argc, char ** argv, int force_print_help)
   res->mdhard_max_files = 100000000;
   res->stonewall_timer = 300;
   res->iorhard_max_segments = 100000000;
+  res->output = stdout;
 
   int c;
   while (1) {
-    c = getopt(argc, argv, "a:e:E:hvw:f:F:s:SI:Clr:");
+    c = getopt(argc, argv, "a:e:E:hvw:f:F:s:SI:ClLr:");
     if (c == -1) {
         break;
     }
@@ -83,6 +85,8 @@ io500_options_t * io500_parse_args(int argc, char ** argv, int force_print_help)
       res->iorhard_max_segments = atol(optarg); break;
     case 'l':
       res->log_all_procs = 1; break;
+    case 'L':
+      res->write_output_to_log = 1; break;
     case 'm':
         res->mdtest_easy_options = strdup(optarg); break;
     case 'r':
