@@ -4,7 +4,8 @@
 #include <stdint.h>
 
 typedef struct{
-  char * backend_name;
+  char * backend_name_bandwidth;
+  char * backend_name_metadata;
   char * workdir;
   char * results_dir;
 

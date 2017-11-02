@@ -12,7 +12,8 @@ static void io500_print_help(io500_options_t * res){
       "\t-w <DIR>: The working directory for the benchmarks = \"%s\"\n"
       "\t-r <DIR>: The result directory for the individual results = \"%s\"\n"
       "Optional flags\n"
-      "\t-a <API>: API for I/O [POSIX|MPIIO|HDF5|HDFS|S3|S3_EMC|NCMPI] = %s\n"
+      "\t-a <API>: API for bandwidth tests [POSIX|MPIIO] = %s\n"
+      "\t-A <API>: API for metadata tests [POSIX|MPIIO] = %s\n"
       "\t-s <seconds>: Stonewall timer for all create/write phases = %d\n"
       "\t-S: Activate stonewall timer for all read phases (default off)\n\t\tuse -S -S to also activate stonewall timer for delete and skip final cleanup phase (useful when formating the partition)\n"
       "\t-e <IOR easy options>: additional acceptable IOR easy option = \"%s\"\n"
@@ -29,7 +30,8 @@ static void io500_print_help(io500_options_t * res){
       "\t--help: prints the help without initializing MPI\n",
       res->workdir,
       res->results_dir,
-      res->backend_name,
+      res->backend_name_bandwidth,
+      res->backend_name_metadata,
       res->stonewall_timer,
       res->ior_easy_options,
       res->ior_hard_options,
@@ -45,7 +47,8 @@ io500_options_t * io500_parse_args(int argc, char ** argv, int force_print_help)
   memset(res, 0, sizeof(io500_options_t));
   int print_help = force_print_help;
 
-  res->backend_name = "POSIX";
+  res->backend_name_bandwidth = "MPIIO";
+  res->backend_name_metadata = "POSIX";
   res->workdir = "./io500-run/";
   res->results_dir = "./io500-results/";
   res->verbosity = 0;
@@ -61,14 +64,16 @@ io500_options_t * io500_parse_args(int argc, char ** argv, int force_print_help)
 
   int c;
   while (1) {
-    c = getopt(argc, argv, "a:e:E:hvw:f:F:s:SI:ClLr:");
+    c = getopt(argc, argv, "a:A:e:E:hvw:f:F:s:SI:ClLr:");
     if (c == -1) {
         break;
     }
 
     switch (c) {
     case 'a':
-        res->backend_name = strdup(optarg); break;
+        res->backend_name_bandwidth = strdup(optarg); break;
+    case 'A':
+          res->backend_name_metadata = strdup(optarg); break;
     case 'C':
         res->only_cleanup = 1; break;
     case 'e':

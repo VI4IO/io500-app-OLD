@@ -40,7 +40,7 @@ IOR_test_t * io500_io_hard_create(io500_options_t * options){
   char args[10000];
   int pos;
   pos = sprintf(args, IOR_HARD_OPTIONS" -w");
-  pos += sprintf(& args[pos], " -a %s", options->backend_name);
+  pos += sprintf(& args[pos], " -a %s", options->backend_name_bandwidth);
   for(int i=0; i < options->verbosity; i++){
     pos += sprintf(& args[pos], " -v");
   }
@@ -60,7 +60,7 @@ IOR_test_t * io500_io_hard_read(io500_options_t * options, IOR_test_t * create_r
   char args[10000];
   int pos;
   pos = sprintf(args, IOR_HARD_OPTIONS" -R");
-  pos += sprintf(& args[pos], " -a %s", options->backend_name);
+  pos += sprintf(& args[pos], " -a %s", options->backend_name_bandwidth);
   for(int i=0; i < options->verbosity; i++){
     pos += sprintf(& args[pos], " -v");
   }
@@ -83,7 +83,7 @@ IOR_test_t * io500_io_easy_create(io500_options_t * options){
   char args[10000];
   int pos;
   pos = sprintf(args, IOR_EASY_OPTIONS" -w");
-  pos += sprintf(& args[pos], " -a %s", options->backend_name);
+  pos += sprintf(& args[pos], " -a %s", options->backend_name_bandwidth);
   for(int i=0; i < options->verbosity; i++){
     pos += sprintf(& args[pos], " -v");
   }
@@ -101,7 +101,7 @@ IOR_test_t * io500_io_easy_read(io500_options_t * options, IOR_test_t * create_r
   char args[10000];
   int pos;
   pos = sprintf(args, IOR_EASY_OPTIONS" -r");
-  pos += sprintf(& args[pos], " -a %s", options->backend_name);
+  pos += sprintf(& args[pos], " -a %s", options->backend_name_bandwidth);
   for(int i=0; i < options->verbosity; i++){
     pos += sprintf(& args[pos], " -v");
   }
@@ -146,7 +146,7 @@ mdtest_results_t * io500_run_mdtest_easy(char mode, int maxfiles, int use_stonew
 
   int pos;
   pos = sprintf(args, MDTEST_EASY_OPTIONS" -%c", mode);
-  pos += sprintf(& args[pos], " -a %s", options->backend_name);
+  pos += sprintf(& args[pos], " -a %s", options->backend_name_metadata);
   pos += sprintf(& args[pos], " -n %d", maxfiles);
   if(use_stonewall){
     pos += sprintf(& args[pos], " -W %d", options->stonewall_timer);
@@ -188,7 +188,7 @@ mdtest_results_t * io500_run_mdtest_hard(char mode, int maxfiles, int use_stonew
   char args[10000];
   int pos;
   pos = sprintf(args, MDTEST_HARD_OPTIONS" -%c", mode);
-  pos += sprintf(& args[pos], " -a %s", options->backend_name);
+  pos += sprintf(& args[pos], " -a %s", options->backend_name_metadata);
   pos += sprintf(& args[pos], " -n %d", maxfiles);
   if(use_stonewall){
     pos += sprintf(& args[pos], " -W %d", options->stonewall_timer);
