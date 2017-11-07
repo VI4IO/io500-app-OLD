@@ -2213,7 +2213,7 @@ mdtest_results_t * mdtest_run(int argc, char **argv, MPI_Comm world_com, FILE * 
 
     while (optList != NULL) {
         thisOpt = optList;
-        optarg = thisOpt->argument;
+        char * optarg = thisOpt->argument;
         optList = optList->next;
         switch (thisOpt->option) {
         case 'a':

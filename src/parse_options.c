@@ -655,9 +655,7 @@ IOR_test_t *ParseCommandLine(int argc, char **argv)
                         initialTestParams.reorderTasksRandom = TRUE;
                         break;
                 default:
-                        fprintf(out_logfile,
-                                "ParseCommandLine: unknown option `-%c'.\n",
-                                optopt);
+                        fprintf(out_logfile, "ParseCommandLine: unknown option\n");
                 }
         }
 
